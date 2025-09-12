@@ -1,7 +1,6 @@
 
 class NotionLawCollector {
     constructor() {
-        this.notionToken = '';
         this.databaseId = '';
         this.init();
     }
@@ -18,18 +17,11 @@ class NotionLawCollector {
         document.getElementById('refreshCases').addEventListener('click', () => this.loadRecentCases());
         
         // Save config on change
-        document.getElementById('notionToken').addEventListener('change', () => this.saveConfig());
         document.getElementById('databaseId').addEventListener('change', () => this.saveConfig());
     }
 
     loadConfig() {
-        const token = localStorage.getItem('notionToken');
         const dbId = localStorage.getItem('databaseId');
-        
-        if (token) {
-            document.getElementById('notionToken').value = token;
-            this.notionToken = token;
-        }
         
         if (dbId) {
             document.getElementById('databaseId').value = dbId;
@@ -38,42 +30,39 @@ class NotionLawCollector {
     }
 
     saveConfig() {
-        this.notionToken = document.getElementById('notionToken').value;
         this.databaseId = document.getElementById('databaseId').value;
         
-        localStorage.setItem('notionToken', this.notionToken);
         localStorage.setItem('databaseId', this.databaseId);
     }
 
     async testConnection() {
         this.saveConfig();
         
-        if (!this.notionToken || !this.databaseId) {
-            this.showNotification('Please enter both token and database ID', 'error');
+        if (!this.databaseId) {
+            this.showNotification('Please enter the database ID', 'error');
             return;
         }
 
         this.showLoading(true);
         
         try {
-            const response = await fetch(`https://api.notion.com/v1/databases/${this.databaseId}`, {
+            const response = await fetch(`/api/testConnection?databaseId=${encodeURIComponent(this.databaseId)}`, {
                 method: 'GET',
                 headers: {
-                    'Authorization': `Bearer ${this.notionToken}`,
-                    'Notion-Version': '2022-06-28',
                     'Content-Type': 'application/json'
                 }
             });
 
-            if (response.ok) {
-                const data = await response.json();
-                this.showConnectionStatus('Connection successful! Database: ' + data.title[0]?.plain_text || 'Untitled', 'success');
+            const result = await response.json();
+            
+            if (response.ok && !result.error) {
+                const data = result.data;
+                this.showConnectionStatus('Connection successful! Database: ' + (data.title[0]?.plain_text || 'Untitled'), 'success');
                 this.showNotification('Connection successful!', 'success');
                 document.getElementById('refreshCases').style.display = 'inline-flex';
                 this.loadRecentCases();
             } else {
-                const error = await response.json();
-                this.showConnectionStatus('Connection failed: ' + (error.message || 'Unknown error'), 'error');
+                this.showConnectionStatus('Connection failed: ' + (result.message || 'Unknown error'), 'error');
                 this.showNotification('Connection failed', 'error');
             }
         } catch (error) {
@@ -87,8 +76,8 @@ class NotionLawCollector {
     async handleSubmit(e) {
         e.preventDefault();
         
-        if (!this.notionToken || !this.databaseId) {
-            this.showNotification('Please configure Notion connection first', 'error');
+        if (!this.databaseId) {
+            this.showNotification('Please configure database connection first', 'error');
             return;
         }
 
@@ -97,14 +86,14 @@ class NotionLawCollector {
         try {
             const formData = this.getFormData();
             const response = await this.createNotionPage(formData);
+            const result = await response.json();
             
-            if (response.ok) {
+            if (response.ok && !result.error) {
                 this.showNotification('Case saved successfully!', 'success');
                 this.clearForm();
                 this.loadRecentCases();
             } else {
-                const error = await response.json();
-                this.showNotification('Failed to save case: ' + (error.message || 'Unknown error'), 'error');
+                this.showNotification('Failed to save case: ' + (result.message || 'Unknown error'), 'error');
             }
         } catch (error) {
             this.showNotification('Error: ' + error.message, 'error');
@@ -257,36 +246,31 @@ class NotionLawCollector {
             };
         }
 
-        return fetch(`https://api.notion.com/v1/pages`, {
+        return fetch('/api/createPage', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${this.notionToken}`,
-                'Notion-Version': '2022-06-28',
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                parent: {
-                    database_id: this.databaseId
-                },
+                databaseId: this.databaseId,
                 properties: properties
             })
         });
     }
 
     async loadRecentCases() {
-        if (!this.notionToken || !this.databaseId) {
+        if (!this.databaseId) {
             return;
         }
 
         try {
-            const response = await fetch(`https://api.notion.com/v1/databases/${this.databaseId}/query`, {
+            const response = await fetch('/api/queryDatabase', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${this.notionToken}`,
-                    'Notion-Version': '2022-06-28',
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
+                    databaseId: this.databaseId,
                     sorts: [
                         {
                             timestamp: 'created_time',
@@ -297,9 +281,10 @@ class NotionLawCollector {
                 })
             });
 
-            if (response.ok) {
-                const data = await response.json();
-                this.displayRecentCases(data.results);
+            const result = await response.json();
+            
+            if (response.ok && !result.error) {
+                this.displayRecentCases(result.data.results);
             }
         } catch (error) {
             console.error('Error loading recent cases:', error);
