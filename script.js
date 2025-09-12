@@ -56,13 +56,15 @@ class NotionLawCollector {
         this.showLoading(true);
         
         try {
-            const response = await fetch(`https://api.notion.com/v1/databases/${this.databaseId}`, {
-                method: 'GET',
+            const response = await fetch('/api/notion/test-connection', {
+                method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${this.notionToken}`,
-                    'Notion-Version': '2022-06-28',
                     'Content-Type': 'application/json'
-                }
+                },
+                body: JSON.stringify({
+                    notionToken: this.notionToken,
+                    databaseId: this.databaseId
+                })
             });
 
             if (response.ok) {
@@ -257,17 +259,14 @@ class NotionLawCollector {
             };
         }
 
-        return fetch(`https://api.notion.com/v1/pages`, {
+        return fetch('/api/notion/create-page', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${this.notionToken}`,
-                'Notion-Version': '2022-06-28',
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                parent: {
-                    database_id: this.databaseId
-                },
+                notionToken: this.notionToken,
+                databaseId: this.databaseId,
                 properties: properties
             })
         });
@@ -279,21 +278,23 @@ class NotionLawCollector {
         }
 
         try {
-            const response = await fetch(`https://api.notion.com/v1/databases/${this.databaseId}/query`, {
+            const response = await fetch('/api/notion/query-database', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${this.notionToken}`,
-                    'Notion-Version': '2022-06-28',
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    sorts: [
-                        {
-                            timestamp: 'created_time',
-                            direction: 'descending'
-                        }
-                    ],
-                    page_size: 5
+                    notionToken: this.notionToken,
+                    databaseId: this.databaseId,
+                    query: {
+                        sorts: [
+                            {
+                                timestamp: 'created_time',
+                                direction: 'descending'
+                            }
+                        ],
+                        page_size: 5
+                    }
                 })
             });
 
