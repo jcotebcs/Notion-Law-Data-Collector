@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import testConnectionHandler from './testConnection.js';
 import createPageHandler from './createPage.js';
 import queryDatabaseHandler from './queryDatabase.js';
+import healthHandler from './health.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,6 +24,7 @@ app.use(express.static(path.join(__dirname, '..')));
 app.all('/api/testConnection', testConnectionHandler);
 app.all('/api/createPage', createPageHandler);
 app.all('/api/queryDatabase', queryDatabaseHandler);
+app.all('/api/health', healthHandler);
 
 // Serve the static frontend
 app.get('/', (req, res) => {

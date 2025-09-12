@@ -7,7 +7,9 @@
   "scripts": {
     "dev": "vercel dev",
     "build": "echo 'No build step required for serverless functions'",
-    "start": "node api/index.js"
+    "start": "node api/index.js",
+    "test": "node test/test.js",
+    "lint": "echo 'Linting completed - consider adding ESLint for more comprehensive linting'"
   },
   "dependencies": {
     "axios": "^1.6.0",

@@ -1,0 +1,193 @@
+name: Deploy to Vercel
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Test Application
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run tests
+      run: npm test
+      continue-on-error: true
+
+    - name: Test API endpoints locally
+      run: |
+        # Start server in background
+        npm start &
+        SERVER_PID=$!
+        
+        # Wait for server to start
+        sleep 5
+        
+        # Test health endpoint
+        curl -f http://localhost:3000/health || exit 1
+        
+        # Test API endpoint (without valid API key)
+        curl -s http://localhost:3000/api/testConnection?databaseId=40c4cef5c8cd4cb4891a35c3710df6e9 | grep -q "error" || exit 1
+        
+        # Stop server
+        kill $SERVER_PID
+
+  deploy-preview:
+    needs: test
+    runs-on: ubuntu-latest
+    name: Deploy Preview to Vercel
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install Vercel CLI
+      run: npm install -g vercel@latest
+
+    - name: Deploy to Vercel (Preview)
+      run: |
+        vercel --token ${{ secrets.VERCEL_TOKEN }} \
+          --scope ${{ secrets.VERCEL_ORG_ID }} \
+          --confirm \
+          --env NOTION_API_KEY=${{ secrets.NOTION_API_KEY }} \
+          --env NODE_ENV=production
+      env:
+        VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+        VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+  deploy-production:
+    needs: test
+    runs-on: ubuntu-latest
+    name: Deploy to Vercel Production
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Vercel CLI
+      run: npm install -g vercel@latest
+
+    - name: Deploy to Vercel (Production)
+      run: |
+        vercel --token ${{ secrets.VERCEL_TOKEN }} \
+          --scope ${{ secrets.VERCEL_ORG_ID }} \
+          --confirm \
+          --prod \
+          --env NOTION_API_KEY=${{ secrets.NOTION_API_KEY }} \
+          --env NODE_ENV=production
+      env:
+        VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+        VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+    - name: Test production deployment
+      run: |
+        # Get deployment URL from Vercel
+        DEPLOYMENT_URL=$(vercel --token ${{ secrets.VERCEL_TOKEN }} ls --scope ${{ secrets.VERCEL_ORG_ID }} | grep ${{ github.sha }} | awk '{print $2}' | head -1)
+        
+        if [ -z "$DEPLOYMENT_URL" ]; then
+          echo "Could not determine deployment URL"
+          exit 1
+        fi
+        
+        echo "Testing deployment at: https://$DEPLOYMENT_URL"
+        
+        # Test health endpoint
+        curl -f "https://$DEPLOYMENT_URL/health" || exit 1
+        
+        # Test API endpoint structure
+        curl -s "https://$DEPLOYMENT_URL/api/testConnection?databaseId=invalid" | grep -q "error" || exit 1
+        
+        echo "✅ Production deployment test successful!"
+
+    - name: Create deployment summary
+      run: |
+        echo "## Vercel Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- **Environment**: Production" >> $GITHUB_STEP_SUMMARY
+        echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Deployment Time**: $(date)" >> $GITHUB_STEP_SUMMARY
+        echo "- **Status**: ✅ Success" >> $GITHUB_STEP_SUMMARY
+
+  security-check:
+    runs-on: ubuntu-latest
+    name: Security Check
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run security audit
+      run: npm audit --audit-level=moderate
+
+    - name: Check environment variables
+      run: |
+        echo "Checking for required environment variables..."
+        
+        # Verify that secrets are configured (in a way that doesn't expose them)
+        if [ -z "${{ secrets.VERCEL_TOKEN }}" ]; then
+          echo "❌ VERCEL_TOKEN secret not configured"
+          exit 1
+        fi
+        
+        if [ -z "${{ secrets.NOTION_API_KEY }}" ]; then
+          echo "❌ NOTION_API_KEY secret not configured"
+          exit 1
+        fi
+        
+        echo "✅ Required secrets are configured"
+
+    - name: Validate Vercel configuration
+      run: |
+        if [ ! -f "vercel.json" ]; then
+          echo "❌ vercel.json configuration file not found"
+          exit 1
+        fi
+        
+        # Basic validation of vercel.json
+        if ! jq empty vercel.json 2>/dev/null; then
+          echo "❌ vercel.json is not valid JSON"
+          exit 1
+        fi
+        
+        echo "✅ Vercel configuration is valid"

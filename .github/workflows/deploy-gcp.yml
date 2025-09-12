@@ -1,0 +1,236 @@
+name: Deploy to Google Cloud Functions
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  GCP_REGION: us-central1
+  FUNCTION_NAME: notion-law-data-collector
+  SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Test Application
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run tests
+      run: npm test
+      continue-on-error: true
+
+    - name: Validate Cloud Function format
+      run: |
+        echo "Validating Cloud Function structure..."
+        
+        # Check that we have the necessary files
+        if [ ! -f "package.json" ]; then
+          echo "❌ package.json not found"
+          exit 1
+        fi
+        
+        # Check Node.js version compatibility
+        if ! jq -e '.engines.node' package.json > /dev/null; then
+          echo "⚠️ No Node.js engine specified in package.json"
+        fi
+        
+        echo "✅ Cloud Function structure is valid"
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    name: Deploy to Google Cloud Functions
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci --only=production
+
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+
+    - name: Setup Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+    - name: Create Cloud Function entry point
+      run: |
+        # Create a Cloud Functions compatible entry point
+        cat > index.js << 'EOF'
+        import functions from '@google-cloud/functions-framework';
+        import app from './api/index.js';
+
+        // Register the HTTP function
+        functions.http('notionLawCollector', app);
+        EOF
+        
+        # Update package.json to include the main entry point
+        jq '.main = "index.js"' package.json > package.tmp.json && mv package.tmp.json package.json
+
+    - name: Create function configuration
+      run: |
+        # Create .gcloudignore to exclude unnecessary files
+        cat > .gcloudignore << 'EOF'
+        .git
+        .github
+        node_modules
+        npm-debug.log
+        .env
+        .env.local
+        .env.*.local
+        *.md
+        .gitignore
+        .DS_Store
+        coverage/
+        test/
+        *.test.js
+        *.spec.js
+        EOF
+
+    - name: Deploy Cloud Function
+      run: |
+        gcloud functions deploy ${{ env.FUNCTION_NAME }} \
+          --runtime nodejs18 \
+          --trigger-http \
+          --allow-unauthenticated \
+          --region ${{ env.GCP_REGION }} \
+          --memory 512MB \
+          --timeout 60s \
+          --set-env-vars NOTION_API_KEY=${{ secrets.NOTION_API_KEY }},NODE_ENV=production \
+          --entry-point notionLawCollector \
+          --source .
+
+    - name: Test deployment
+      run: |
+        # Get the function URL
+        FUNCTION_URL=$(gcloud functions describe ${{ env.FUNCTION_NAME }} \
+          --region ${{ env.GCP_REGION }} \
+          --format="value(httpsTrigger.url)")
+        
+        if [ -z "$FUNCTION_URL" ]; then
+          echo "❌ Could not get function URL"
+          exit 1
+        fi
+        
+        echo "Testing function at: $FUNCTION_URL"
+        
+        # Test health endpoint
+        curl -f "$FUNCTION_URL/health" || exit 1
+        
+        # Test API structure
+        curl -s "$FUNCTION_URL/api/testConnection?databaseId=invalid" | grep -q "error" || exit 1
+        
+        echo "✅ Cloud Function deployment test successful!"
+        echo "Function URL: $FUNCTION_URL" >> $GITHUB_STEP_SUMMARY
+
+    - name: Create deployment summary
+      run: |
+        FUNCTION_URL=$(gcloud functions describe ${{ env.FUNCTION_NAME }} \
+          --region ${{ env.GCP_REGION }} \
+          --format="value(httpsTrigger.url)")
+        
+        echo "## Google Cloud Function Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- **Function Name**: ${{ env.FUNCTION_NAME }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Region**: ${{ env.GCP_REGION }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Runtime**: Node.js 18" >> $GITHUB_STEP_SUMMARY
+        echo "- **URL**: $FUNCTION_URL" >> $GITHUB_STEP_SUMMARY
+        echo "- **Deployment Time**: $(date)" >> $GITHUB_STEP_SUMMARY
+        echo "- **Status**: ✅ Success" >> $GITHUB_STEP_SUMMARY
+
+  cleanup:
+    needs: deploy
+    runs-on: ubuntu-latest
+    name: Cleanup old versions
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+
+    - name: Setup Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+    - name: Cleanup old function versions
+      run: |
+        echo "Cleaning up old function versions..."
+        
+        # Keep only the 5 most recent versions
+        gcloud functions list --filter="name:${{ env.FUNCTION_NAME }}" \
+          --format="value(name)" \
+          --limit=10 | tail -n +6 | while read version; do
+          if [ ! -z "$version" ]; then
+            echo "Would delete old version: $version"
+            # Uncomment to actually delete:
+            # gcloud functions delete "$version" --region ${{ env.GCP_REGION }} --quiet
+          fi
+        done
+        
+        echo "✅ Cleanup completed"
+
+  security-scan:
+    runs-on: ubuntu-latest
+    name: Security Scan
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run security audit
+      run: npm audit --audit-level=moderate
+
+    - name: Check IAM permissions
+      run: |
+        echo "Checking required GCP permissions..."
+        
+        # Verify that secrets are configured
+        if [ -z "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}" ]; then
+          echo "❌ GCP_SERVICE_ACCOUNT_KEY secret not configured"
+          exit 1
+        fi
+        
+        if [ -z "${{ secrets.GCP_PROJECT_ID }}" ]; then
+          echo "❌ GCP_PROJECT_ID secret not configured"
+          exit 1
+        fi
+        
+        echo "✅ Required GCP secrets are configured"

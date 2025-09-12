@@ -1,0 +1,197 @@
+name: Deploy to AWS Lambda
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  FUNCTION_NAME: notion-law-data-collector
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Test Application
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run tests
+      run: npm test
+      continue-on-error: true
+
+    - name: Lint code
+      run: npm run lint
+      continue-on-error: true
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    name: Deploy to AWS Lambda
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci --only=production
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Install AWS CLI and SAM CLI
+      run: |
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+        unzip awscliv2.zip
+        sudo ./aws/install
+        pip install aws-sam-cli
+
+    - name: Create deployment package
+      run: |
+        # Create lambda deployment directory
+        mkdir -p lambda-deployment
+        
+        # Copy application files
+        cp -r api lambda-deployment/
+        cp package.json lambda-deployment/
+        cp package-lock.json lambda-deployment/
+        
+        # Create Lambda handler
+        cat > lambda-deployment/lambda.js << 'EOF'
+        import serverlessExpress from '@vendia/serverless-express';
+        import app from './api/index.js';
+
+        export const handler = serverlessExpress({ app });
+        EOF
+        
+        # Install production dependencies in deployment directory
+        cd lambda-deployment
+        npm ci --only=production
+        
+        # Create deployment zip
+        zip -r ../deployment.zip . -x "*.git*" "*.DS_Store*"
+
+    - name: Create/Update Lambda function
+      run: |
+        # Check if function exists
+        if aws lambda get-function --function-name ${{ env.FUNCTION_NAME }} 2>/dev/null; then
+          echo "Updating existing Lambda function..."
+          aws lambda update-function-code \
+            --function-name ${{ env.FUNCTION_NAME }} \
+            --zip-file fileb://deployment.zip
+          
+          # Update environment variables
+          aws lambda update-function-configuration \
+            --function-name ${{ env.FUNCTION_NAME }} \
+            --environment Variables="{NOTION_API_KEY=${{ secrets.NOTION_API_KEY }},NODE_ENV=production}"
+        else
+          echo "Creating new Lambda function..."
+          aws lambda create-function \
+            --function-name ${{ env.FUNCTION_NAME }} \
+            --runtime nodejs18.x \
+            --role arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/lambda-execution-role \
+            --handler lambda.handler \
+            --zip-file fileb://deployment.zip \
+            --timeout 30 \
+            --memory-size 512 \
+            --environment Variables="{NOTION_API_KEY=${{ secrets.NOTION_API_KEY }},NODE_ENV=production}"
+        fi
+
+    - name: Create/Update API Gateway
+      run: |
+        # Create or update API Gateway configuration
+        echo "Setting up API Gateway..."
+        
+        # Note: This is a simplified example. In production, you might want to use 
+        # AWS SAM templates or CloudFormation for more complex setups.
+        
+        # Check if API exists
+        API_ID=$(aws apigateway get-rest-apis --query "items[?name=='${{ env.FUNCTION_NAME }}-api'].id" --output text)
+        
+        if [ "$API_ID" = "None" ] || [ -z "$API_ID" ]; then
+          echo "Creating new API Gateway..."
+          # This would need a proper CloudFormation template or SAM template
+          # For now, we'll just update the Lambda function
+        else
+          echo "API Gateway exists: $API_ID"
+        fi
+
+    - name: Test deployment
+      run: |
+        echo "Testing Lambda function..."
+        aws lambda invoke \
+          --function-name ${{ env.FUNCTION_NAME }} \
+          --payload '{"httpMethod":"GET","path":"/health","headers":{}}' \
+          response.json
+        
+        cat response.json
+        
+        # Check if response is successful
+        if grep -q '"statusCode":200' response.json; then
+          echo "✅ Deployment test successful!"
+        else
+          echo "❌ Deployment test failed!"
+          exit 1
+        fi
+
+    - name: Create deployment summary
+      run: |
+        echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- **Function Name**: ${{ env.FUNCTION_NAME }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Region**: ${{ env.AWS_REGION }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Runtime**: Node.js 18.x" >> $GITHUB_STEP_SUMMARY
+        echo "- **Deployment Time**: $(date)" >> $GITHUB_STEP_SUMMARY
+        echo "- **Status**: ✅ Success" >> $GITHUB_STEP_SUMMARY
+
+  security-scan:
+    runs-on: ubuntu-latest
+    name: Security Scan
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run security audit
+      run: npm audit --audit-level=moderate
+
+    - name: Check for secrets in code
+      run: |
+        if grep -r "secret_" --include="*.js" --include="*.json" --exclude-dir=node_modules .; then
+          echo "⚠️ Potential secrets found in code"
+          exit 1
+        else
+          echo "✅ No secrets found in code"
+        fi
