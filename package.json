@@ -1,0 +1,30 @@
+{
+  "name": "notion-law-data-collector",
+  "version": "1.0.0",
+  "description": "A serverless backend for the Notion Law Data Collector to resolve CORS issues",
+  "type": "module",
+  "main": "api/index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'No build step required for serverless functions'",
+    "start": "node api/index.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "@vercel/node": "^3.0.0"
+  },
+  "keywords": [
+    "notion",
+    "legal",
+    "serverless",
+    "cors",
+    "api"
+  ],
+  "author": "",
+  "license": "MIT"
+}

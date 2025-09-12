@@ -41,11 +41,23 @@ pids
 
 # dotenv environment variables file
 .env
+.env.local
+.env.production
+
+# Node.js dependencies
+node_modules/
+package-lock.json
+
+# Serverless deployment
+.vercel
 
 # Local development
 .cache/
 dist/
 build/
+
+# Testing
+test-integration.js
 
 # Backup files
 *.bak

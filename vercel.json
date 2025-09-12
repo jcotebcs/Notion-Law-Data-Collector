@@ -1,0 +1,26 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/**/*.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/testConnection",
+      "dest": "/api/testConnection.js"
+    },
+    {
+      "src": "/api/createPage",
+      "dest": "/api/createPage.js"
+    },
+    {
+      "src": "/api/queryDatabase",
+      "dest": "/api/queryDatabase.js"
+    }
+  ],
+  "env": {
+    "NOTION_API_KEY": "@notion_api_key"
+  }
+}

@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: notion-law-data-collector
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NOTION_API_KEY
+        sync: false  # Set this manually in Render dashboard
