@@ -1,0 +1,1 @@
+# Notion-Law-Data-Collector
