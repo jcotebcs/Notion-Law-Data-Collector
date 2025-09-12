@@ -1,0 +1,26 @@
+{
+  "name": "notion-law-data-collector",
+  "version": "1.0.0",
+  "description": "A serverless backend for collecting and organizing legal case data in Notion",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'No build step required for serverless functions'",
+    "start": "vercel dev"
+  },
+  "keywords": [
+    "notion",
+    "legal",
+    "data",
+    "serverless",
+    "vercel"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@notionhq/client": "^2.2.15"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

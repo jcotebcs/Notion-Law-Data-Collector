@@ -27,6 +27,9 @@ pids
 *.seed
 *.pid.lock
 
+# Dependencies
+node_modules/
+
 # Optional npm cache directory
 .npm
 
@@ -41,6 +44,11 @@ pids
 
 # dotenv environment variables file
 .env
+.env.local
+.env.production
+
+# Vercel
+.vercel
 
 # Local development
 .cache/
