@@ -1,0 +1,194 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notion Law Data Collector</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-gavel"></i> Notion Law Data Collector</h1>
+            <p>Collect and organize legal case data directly into your Notion database</p>
+        </header>
+
+        <div class="config-section">
+            <h2><i class="fas fa-cog"></i> Configuration</h2>
+            <div class="form-group">
+                <label for="notionToken">Notion Integration Token:</label>
+                <input type="password" id="notionToken" placeholder="secret_...">
+                <small>Get your token from <a href="https://www.notion.so/my-integrations" target="_blank">Notion Integrations</a></small>
+            </div>
+            <div class="form-group">
+                <label for="databaseId">Database ID:</label>
+                <input type="text" id="databaseId" placeholder="32-character database ID">
+                <small>Copy from your Notion database URL</small>
+            </div>
+            <button id="testConnection" class="btn btn-secondary">
+                <i class="fas fa-plug"></i> Test Connection
+            </button>
+            <div id="connectionStatus"></div>
+        </div>
+
+        <div class="data-entry-section">
+            <h2><i class="fas fa-plus-circle"></i> Add Legal Case Data</h2>
+            <form id="caseForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="caseTitle">Case Title:</label>
+                        <input type="text" id="caseTitle" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="caseNumber">Case Number:</label>
+                        <input type="text" id="caseNumber">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="court">Court:</label>
+                        <input type="text" id="court">
+                    </div>
+                    <div class="form-group">
+                        <label for="judge">Judge:</label>
+                        <input type="text" id="judge">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="caseDate">Case Date:</label>
+                        <input type="date" id="caseDate">
+                    </div>
+                    <div class="form-group">
+                        <label for="caseStatus">Status:</label>
+                        <select id="caseStatus">
+                            <option value="">Select Status</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Active">Active</option>
+                            <option value="Closed">Closed</option>
+                            <option value="Appeal">Appeal</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="parties">Parties Involved:</label>
+                    <textarea id="parties" rows="3" placeholder="Plaintiff vs Defendant"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="caseType">Case Type:</label>
+                    <select id="caseType">
+                        <option value="">Select Type</option>
+                        <option value="Civil">Civil</option>
+                        <option value="Criminal">Criminal</option>
+                        <option value="Family">Family</option>
+                        <option value="Corporate">Corporate</option>
+                        <option value="Constitutional">Constitutional</option>
+                        <option value="Administrative">Administrative</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="summary">Case Summary:</label>
+                    <textarea id="summary" rows="4" placeholder="Brief summary of the case..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="outcome">Outcome/Ruling:</label>
+                    <textarea id="outcome" rows="3" placeholder="Court decision or current status..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="tags">Tags:</label>
+                    <input type="text" id="tags" placeholder="contract, dispute, settlement (comma-separated)">
+                </div>
+
+                <div class="form-group">
+                    <label for="priority">Priority:</label>
+                    <select id="priority">
+                        <option value="">Select Priority</option>
+                        <option value="Low">Low</option>
+                        <option value="Medium">Medium</option>
+                        <option value="High">High</option>
+                        <option value="Urgent">Urgent</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Save to Notion
+                </button>
+            </form>
+        </div>
+
+        <div class="recent-cases-section">
+            <h2><i class="fas fa-history"></i> Recent Cases</h2>
+            <div id="recentCases">
+                <p>Configure your Notion connection to view recent cases.</p>
+            </div>
+            <button id="refreshCases" class="btn btn-secondary" style="display: none;">
+                <i class="fas fa-refresh"></i> Refresh
+            </button>
+        </div>
+
+        <div class="help-section">
+            <h2><i class="fas fa-question-circle"></i> Setup Instructions</h2>
+            <div class="help-content">
+                <h3>1. Create a Notion Integration</h3>
+                <ol>
+                    <li>Go to <a href="https://www.notion.so/my-integrations" target="_blank">Notion Integrations</a></li>
+                    <li>Click "New integration"</li>
+                    <li>Give it a name like "Law Data Collector"</li>
+                    <li>Copy the "Internal Integration Token"</li>
+                </ol>
+
+                <h3>2. Create a Database</h3>
+                <ol>
+                    <li>Create a new page in Notion</li>
+                    <li>Add a database with these properties:
+                        <ul>
+                            <li><strong>Title</strong> (Title)</li>
+                            <li><strong>Case Number</strong> (Rich Text)</li>
+                            <li><strong>Court</strong> (Rich Text)</li>
+                            <li><strong>Judge</strong> (Rich Text)</li>
+                            <li><strong>Date</strong> (Date)</li>
+                            <li><strong>Status</strong> (Select)</li>
+                            <li><strong>Parties</strong> (Rich Text)</li>
+                            <li><strong>Type</strong> (Select)</li>
+                            <li><strong>Summary</strong> (Rich Text)</li>
+                            <li><strong>Outcome</strong> (Rich Text)</li>
+                            <li><strong>Tags</strong> (Multi-select)</li>
+                            <li><strong>Priority</strong> (Select)</li>
+                        </ul>
+                    </li>
+                    <li>Share the database with your integration</li>
+                    <li>Copy the database ID from the URL</li>
+                </ol>
+
+                <h3>3. Configure This App</h3>
+                <ol>
+                    <li>Paste your integration token above</li>
+                    <li>Paste your database ID above</li>
+                    <li>Test the connection</li>
+                    <li>Start adding case data!</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Processing...</p>
+        </div>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
