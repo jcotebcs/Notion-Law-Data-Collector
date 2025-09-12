@@ -1,7 +1,6 @@
 
 class NotionLawCollector {
     constructor() {
-        this.notionToken = '';
         this.databaseId = '';
         this.init();
     }
@@ -18,18 +17,11 @@ class NotionLawCollector {
         document.getElementById('refreshCases').addEventListener('click', () => this.loadRecentCases());
         
         // Save config on change
-        document.getElementById('notionToken').addEventListener('change', () => this.saveConfig());
         document.getElementById('databaseId').addEventListener('change', () => this.saveConfig());
     }
 
     loadConfig() {
-        const token = localStorage.getItem('notionToken');
         const dbId = localStorage.getItem('databaseId');
-        
-        if (token) {
-            document.getElementById('notionToken').value = token;
-            this.notionToken = token;
-        }
         
         if (dbId) {
             document.getElementById('databaseId').value = dbId;
@@ -38,42 +30,41 @@ class NotionLawCollector {
     }
 
     saveConfig() {
-        this.notionToken = document.getElementById('notionToken').value;
         this.databaseId = document.getElementById('databaseId').value;
-        
-        localStorage.setItem('notionToken', this.notionToken);
         localStorage.setItem('databaseId', this.databaseId);
     }
 
     async testConnection() {
         this.saveConfig();
         
-        if (!this.notionToken || !this.databaseId) {
-            this.showNotification('Please enter both token and database ID', 'error');
+        if (!this.databaseId) {
+            this.showNotification('Please enter a database ID', 'error');
             return;
         }
 
         this.showLoading(true);
         
         try {
-            const response = await fetch(`https://api.notion.com/v1/databases/${this.databaseId}`, {
-                method: 'GET',
+            const response = await fetch('/api/notion', {
+                method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${this.notionToken}`,
-                    'Notion-Version': '2022-06-28',
                     'Content-Type': 'application/json'
-                }
+                },
+                body: JSON.stringify({
+                    action: 'testConnection',
+                    databaseId: this.databaseId
+                })
             });
 
-            if (response.ok) {
-                const data = await response.json();
-                this.showConnectionStatus('Connection successful! Database: ' + data.title[0]?.plain_text || 'Untitled', 'success');
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                this.showConnectionStatus('Connection successful! Database: ' + (data.database?.title || 'Untitled'), 'success');
                 this.showNotification('Connection successful!', 'success');
                 document.getElementById('refreshCases').style.display = 'inline-flex';
                 this.loadRecentCases();
             } else {
-                const error = await response.json();
-                this.showConnectionStatus('Connection failed: ' + (error.message || 'Unknown error'), 'error');
+                this.showConnectionStatus('Connection failed: ' + (data.message || 'Unknown error'), 'error');
                 this.showNotification('Connection failed', 'error');
             }
         } catch (error) {
@@ -87,7 +78,7 @@ class NotionLawCollector {
     async handleSubmit(e) {
         e.preventDefault();
         
-        if (!this.notionToken || !this.databaseId) {
+        if (!this.databaseId) {
             this.showNotification('Please configure Notion connection first', 'error');
             return;
         }
@@ -131,174 +122,57 @@ class NotionLawCollector {
     }
 
     async createNotionPage(data) {
-        const properties = {
-            'Title': {
-                title: [
-                    {
-                        text: {
-                            content: data.title || 'Untitled Case'
-                        }
-                    }
-                ]
-            }
-        };
+        try {
+            const response = await fetch('/api/notion', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: 'createPage',
+                    databaseId: this.databaseId,
+                    data: data
+                })
+            });
 
-        // Add other properties if they exist and have values
-        if (data.caseNumber) {
-            properties['Case Number'] = {
-                rich_text: [
-                    {
-                        text: {
-                            content: data.caseNumber
-                        }
-                    }
-                ]
-            };
-        }
-
-        if (data.court) {
-            properties['Court'] = {
-                rich_text: [
-                    {
-                        text: {
-                            content: data.court
-                        }
-                    }
-                ]
-            };
-        }
-
-        if (data.judge) {
-            properties['Judge'] = {
-                rich_text: [
-                    {
-                        text: {
-                            content: data.judge
-                        }
-                    }
-                ]
-            };
-        }
-
-        if (data.date) {
-            properties['Date'] = {
-                date: {
-                    start: data.date
-                }
-            };
-        }
-
-        if (data.status) {
-            properties['Status'] = {
-                select: {
-                    name: data.status
-                }
-            };
-        }
-
-        if (data.parties) {
-            properties['Parties'] = {
-                rich_text: [
-                    {
-                        text: {
-                            content: data.parties
-                        }
-                    }
-                ]
-            };
-        }
-
-        if (data.type) {
-            properties['Type'] = {
-                select: {
-                    name: data.type
-                }
-            };
-        }
-
-        if (data.summary) {
-            properties['Summary'] = {
-                rich_text: [
-                    {
-                        text: {
-                            content: data.summary
-                        }
-                    }
-                ]
-            };
-        }
-
-        if (data.outcome) {
-            properties['Outcome'] = {
-                rich_text: [
-                    {
-                        text: {
-                            content: data.outcome
-                        }
-                    }
-                ]
-            };
-        }
-
-        if (data.tags) {
-            const tagArray = data.tags.split(',').map(tag => tag.trim()).filter(tag => tag);
-            if (tagArray.length > 0) {
-                properties['Tags'] = {
-                    multi_select: tagArray.map(tag => ({ name: tag }))
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                return { ok: true, ...result };
+            } else {
+                return { 
+                    ok: false, 
+                    json: async () => ({ message: result.message || 'Failed to create page' })
                 };
             }
-        }
-
-        if (data.priority) {
-            properties['Priority'] = {
-                select: {
-                    name: data.priority
-                }
+        } catch (error) {
+            return { 
+                ok: false, 
+                json: async () => ({ message: error.message || 'Network error' })
             };
         }
-
-        return fetch(`https://api.notion.com/v1/pages`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${this.notionToken}`,
-                'Notion-Version': '2022-06-28',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                parent: {
-                    database_id: this.databaseId
-                },
-                properties: properties
-            })
-        });
     }
 
     async loadRecentCases() {
-        if (!this.notionToken || !this.databaseId) {
+        if (!this.databaseId) {
             return;
         }
 
         try {
-            const response = await fetch(`https://api.notion.com/v1/databases/${this.databaseId}/query`, {
+            const response = await fetch('/api/notion', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${this.notionToken}`,
-                    'Notion-Version': '2022-06-28',
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    sorts: [
-                        {
-                            timestamp: 'created_time',
-                            direction: 'descending'
-                        }
-                    ],
-                    page_size: 5
+                    action: 'queryDatabase',
+                    databaseId: this.databaseId
                 })
             });
 
-            if (response.ok) {
-                const data = await response.json();
+            const data = await response.json();
+
+            if (response.ok && data.success) {
                 this.displayRecentCases(data.results);
             }
         } catch (error) {

@@ -1,4 +1,4 @@
-# Static Web Application - GitHub Pages
+# Static Web Application - GitHub Pages with Node.js Backend
 # OS generated files
 .DS_Store
 .DS_Store?
@@ -27,6 +27,11 @@ pids
 *.seed
 *.pid.lock
 
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
 # Optional npm cache directory
 .npm
 
@@ -41,11 +46,16 @@ pids
 
 # dotenv environment variables file
 .env
+.env.local
 
 # Local development
 .cache/
 dist/
 build/
+.vercel
+
+# Test files
+test-api.js
 
 # Backup files
 *.bak

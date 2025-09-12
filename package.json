@@ -1,0 +1,23 @@
+{
+  "name": "notion-law-data-collector",
+  "version": "1.0.0",
+  "description": "A web application for collecting and organizing legal case data into Notion database",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'Static site - no build required'",
+    "start": "vercel dev"
+  },
+  "keywords": ["notion", "legal", "case-management", "data-collection"],
+  "author": "jcotebcs",
+  "license": "MIT",
+  "dependencies": {
+    "@notionhq/client": "^2.2.15"
+  },
+  "devDependencies": {
+    "vercel": "^32.5.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

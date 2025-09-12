@@ -20,10 +20,9 @@
 
         <div class="config-section">
             <h2><i class="fas fa-cog"></i> Configuration</h2>
-            <div class="form-group">
-                <label for="notionToken">Notion Integration Token:</label>
-                <input type="password" id="notionToken" placeholder="secret_...">
-                <small>Get your token from <a href="https://www.notion.so/my-integrations" target="_blank">Notion Integrations</a></small>
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                <strong>Server-side Integration:</strong> Your Notion token is now securely managed via environment variables on the server.
             </div>
             <div class="form-group">
                 <label for="databaseId">Database ID:</label>
@@ -141,15 +140,22 @@
         <div class="help-section">
             <h2><i class="fas fa-question-circle"></i> Setup Instructions</h2>
             <div class="help-content">
-                <h3>1. Create a Notion Integration</h3>
+                <h3>1. Deploy the Application</h3>
+                <ol>
+                    <li>Deploy to Vercel, Railway, or Render using the deploy buttons</li>
+                    <li>Set the <code>NOTION_TOKEN</code> environment variable with your integration token</li>
+                    <li>Access your deployed application URL</li>
+                </ol>
+
+                <h3>2. Create a Notion Integration</h3>
                 <ol>
                     <li>Go to <a href="https://www.notion.so/my-integrations" target="_blank">Notion Integrations</a></li>
                     <li>Click "New integration"</li>
                     <li>Give it a name like "Law Data Collector"</li>
-                    <li>Copy the "Internal Integration Token"</li>
+                    <li>Copy the "Internal Integration Token" for your server environment</li>
                 </ol>
 
-                <h3>2. Create a Database</h3>
+                <h3>3. Create a Database</h3>
                 <ol>
                     <li>Create a new page in Notion</li>
                     <li>Add a database with these properties:
@@ -172,10 +178,9 @@
                     <li>Copy the database ID from the URL</li>
                 </ol>
 
-                <h3>3. Configure This App</h3>
+                <h3>4. Configure This App</h3>
                 <ol>
-                    <li>Paste your integration token above</li>
-                    <li>Paste your database ID above</li>
+                    <li>Paste your database ID above (token is managed server-side)</li>
                     <li>Test the connection</li>
                     <li>Start adding case data!</li>
                 </ol>

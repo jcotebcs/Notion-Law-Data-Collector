@@ -1,20 +1,54 @@
 
 # Notion Law Data Collector
 
-A static web application for collecting and organizing legal case data directly into your Notion database. This application runs entirely in the browser and is hosted on GitHub Pages.
+A web application for collecting and organizing legal case data directly into your Notion database. This application features a serverless Node.js backend that handles Notion API interactions to resolve CORS issues, while maintaining a clean frontend interface.
+
+## Architecture
+
+- **Frontend**: Static HTML/CSS/JavaScript interface
+- **Backend**: Serverless Node.js functions (Vercel/Railway/Render compatible)
+- **API**: RESTful endpoints that proxy requests to Notion API
+- **Deployment**: Serverless platform with environment variable configuration
 
 ## Features
 
 - 📝 **Easy Data Entry**: Intuitive form for entering legal case information
-- 🔗 **Direct Notion Integration**: Connects directly to your Notion database via API
+- 🔗 **Secure Notion Integration**: Server-side API integration eliminates CORS issues
 - 📱 **Responsive Design**: Works on desktop, tablet, and mobile devices
-- 🔒 **Secure**: All data is processed client-side, no server required
-- ⚡ **Fast**: Static hosting means instant loading
+- 🔒 **Secure**: API keys managed via environment variables, no client-side exposure
+- ⚡ **Fast**: Serverless architecture with static frontend
 - 📊 **Recent Cases View**: See your latest entries at a glance
+- 🚀 **Easy Deployment**: Deploy to Vercel, Railway, or Render with one click
 
 ## Live Demo
 
-Visit the application at: [https://jcotebcs.github.io/Notion-Law-Data-Collector/](https://jcotebcs.github.io/Notion-Law-Data-Collector/)
+Deploy your own instance:
+- **Vercel**: [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/jcotebcs/Notion-Law-Data-Collector)
+- **Railway**: [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template/notion-law-collector)
+- **Render**: [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
+
+## Quick Start
+
+### Option 1: Deploy to Vercel (Recommended)
+
+1. Click the "Deploy with Vercel" button above
+2. Connect your GitHub account and fork the repository
+3. Set the `NOTION_TOKEN` environment variable with your integration token
+4. Deploy and access your application
+
+### Option 2: Deploy to Railway
+
+1. Click the "Deploy on Railway" button above
+2. Connect your GitHub account
+3. Set the `NOTION_TOKEN` environment variable
+4. Deploy and access your application
+
+### Option 3: Deploy to Render
+
+1. Click the "Deploy to Render" button above
+2. Connect your GitHub account
+3. Set the `NOTION_TOKEN` environment variable
+4. Deploy and access your application
 
 ## Setup Instructions
 
@@ -50,13 +84,20 @@ Visit the application at: [https://jcotebcs.github.io/Notion-Law-Data-Collector/
 
 4. Copy the database ID from the URL (32-character string)
 
-### 3. Configure the Application
+### 3. Deploy the Application
 
-1. Open the application in your browser
-2. Paste your integration token in the "Notion Integration Token" field
-3. Paste your database ID in the "Database ID" field
-4. Click "Test Connection" to verify everything works
-5. Start adding case data!
+Choose one of the deployment options above (Vercel, Railway, or Render) and:
+
+1. Set the `NOTION_TOKEN` environment variable to your integration token
+2. Deploy the application
+3. Access your deployed application URL
+
+### 4. Configure the Application
+
+1. Open your deployed application in your browser
+2. Paste your database ID in the "Database ID" field (the token is now handled server-side)
+3. Click "Test Connection" to verify everything works
+4. Start adding case data!
 
 ## Data Fields
 
@@ -77,31 +118,57 @@ The application supports the following case data fields:
 
 ## Security & Privacy
 
-- All data processing happens in your browser
-- Your Notion token is stored locally in your browser only
-- No data is sent to any third-party servers
-- Direct connection to Notion's official API
+- **Server-side Processing**: API calls are handled server-side to eliminate CORS issues
+- **Environment Variables**: Notion tokens are stored securely as environment variables
+- **No Client Exposure**: API keys are never exposed to the client-side code
+- **Secure Integration**: Direct connection to Notion's official API through serverless functions
 
-## Browser Compatibility
+## Local Development
 
-This application works in all modern browsers that support:
-- ES6+ JavaScript features
-- Fetch API
-- Local Storage
-- CSS Grid and Flexbox
+### Prerequisites
+- Node.js 18+ 
+- npm or yarn
+
+### Setup
+1. Clone this repository
+2. Install dependencies: `npm install`
+3. Create a `.env` file with your Notion token:
+   ```
+   NOTION_TOKEN=your_secret_token_here
+   ```
+4. Start the development server: `npm run dev`
+5. Open http://localhost:3000
+
+### Testing
+Run the API validation test:
+```bash
+node test-api.js
+```
 
 ## Development
 
-This is a static web application built with:
-- HTML5
-- CSS3 (with CSS Grid and Flexbox)
-- Vanilla JavaScript (ES6+)
-- Notion API v2022-06-28
+This application is built with:
+- **Frontend**: HTML5, CSS3, Vanilla JavaScript (ES6+)
+- **Backend**: Node.js serverless functions
+- **API**: Notion API v2022-06-28 via @notionhq/client
+- **Deployment**: Vercel/Railway/Render compatible
 
-To run locally:
-1. Clone this repository
-2. Serve the files using any static web server
-3. For example: `python -m http.server 8000`
+## Deployment Platforms
+
+### Vercel
+- Automatic deployment from GitHub
+- Built-in environment variable management
+- Serverless functions support
+
+### Railway
+- Git-based deployments
+- Environment variable configuration
+- Automatic HTTPS
+
+### Render
+- Static site + serverless functions
+- Environment variable management  
+- Custom domains
 
 ## Contributing
 
@@ -121,6 +188,16 @@ If you encounter any issues:
 1. Check that your Notion integration has the correct permissions
 2. Verify your database ID is correct (32 characters)
 3. Ensure your database has all the required properties
-4. Check the browser console for any error messages
+4. Check that the `NOTION_TOKEN` environment variable is set correctly
+5. Verify your deployment platform environment variables
+6. Check the browser console and server logs for error messages
 
 For additional help, please open an issue on GitHub.
+
+## Migration from Previous Version
+
+If you were using the previous client-side version:
+1. Deploy the new serverless version using one of the deployment options
+2. Set up the `NOTION_TOKEN` environment variable instead of entering it in the UI
+3. The database ID can still be entered in the frontend interface
+4. All your existing Notion database structure remains compatible
