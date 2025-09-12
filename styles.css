@@ -8,8 +8,8 @@
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     line-height: 1.6;
-    color: #333;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #37474F;
+    background: linear-gradient(135deg, #1565C0 0%, #2E7D32 50%, #4CAF50 100%);
     min-height: 100vh;
 }
 
@@ -20,18 +20,47 @@ body {
 }
 
 header {
+    position: relative;
     text-align: center;
     margin-bottom: 40px;
     color: white;
+    overflow: hidden;
 }
 
-header h1 {
+.geometric-accent {
+    position: absolute;
+    top: -50px;
+    left: -100px;
+    width: 200px;
+    height: 200px;
+    background: linear-gradient(45deg, #4CAF50 0%, rgba(76, 175, 80, 0.3) 100%);
+    transform: rotate(45deg);
+    opacity: 0.6;
+}
+
+.geometric-accent::after {
+    content: '';
+    position: absolute;
+    top: 50px;
+    right: -150px;
+    width: 150px;
+    height: 150px;
+    background: linear-gradient(-45deg, #1565C0 0%, rgba(21, 101, 192, 0.3) 100%);
+    transform: rotate(-30deg);
+}
+
+.header-content {
+    position: relative;
+    z-index: 2;
+}
+
+.header-content h1 {
     font-size: 2.5rem;
     margin-bottom: 10px;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
 }
 
-header p {
+.header-content p {
     font-size: 1.2rem;
     opacity: 0.9;
 }
@@ -51,7 +80,7 @@ header p {
 .data-entry-section h2,
 .recent-cases-section h2,
 .help-section h2 {
-    color: #4a5568;
+    color: #1565C0;
     margin-bottom: 20px;
     font-size: 1.5rem;
     display: flex;
@@ -73,7 +102,7 @@ header p {
     display: block;
     margin-bottom: 5px;
     font-weight: 600;
-    color: #4a5568;
+    color: #2E7D32;
 }
 
 .form-group input,
@@ -91,8 +120,8 @@ header p {
 .form-group select:focus,
 .form-group textarea:focus {
     outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: #4CAF50;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
 }
 
 .form-group small {
@@ -103,7 +132,7 @@ header p {
 }
 
 .form-group small a {
-    color: #667eea;
+    color: #1565C0;
     text-decoration: none;
 }
 
@@ -126,24 +155,24 @@ header p {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
     color: white;
 }
 
 .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
 }
 
 .btn-secondary {
     background: #f7fafc;
-    color: #4a5568;
+    color: #1565C0;
     border: 2px solid #e2e8f0;
 }
 
 .btn-secondary:hover {
-    background: #edf2f7;
-    border-color: #cbd5e0;
+    background: #E8F5E8;
+    border-color: #4CAF50;
 }
 
 #connectionStatus {
@@ -176,7 +205,7 @@ header p {
     background: #f7fafc;
     padding: 20px;
     border-radius: 8px;
-    border-left: 4px solid #667eea;
+    border-left: 4px solid #4CAF50;
 }
 
 .case-item h4 {
@@ -223,7 +252,7 @@ header p {
 }
 
 .help-content a {
-    color: #667eea;
+    color: #1565C0;
     text-decoration: none;
 }
 
@@ -254,7 +283,7 @@ header p {
 
 .loading-spinner i {
     font-size: 2rem;
-    color: #667eea;
+    color: #4CAF50;
     margin-bottom: 15px;
 }
 
@@ -288,7 +317,7 @@ header p {
         padding: 15px;
     }
     
-    header h1 {
+    .header-content h1 {
         font-size: 2rem;
     }
     
