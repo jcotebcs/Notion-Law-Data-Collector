@@ -30,37 +30,74 @@ The original version made direct browser requests to Notion API, which caused CO
 - **Scalable**: Serverless functions auto-scale with demand
 - **Cost-Effective**: Only pay for actual usage
 
-## Deployment Options
+## Deployment Guide
 
-This application can be deployed to multiple serverless platforms:
+### Quick Deploy to Vercel (Recommended)
 
-### Option 1: Vercel (Recommended)
+1. **Fork this repository** to your GitHub account
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/jcotebcs/Notion-Law-Data-Collector)
+2. **Deploy to Vercel:**
+   - Visit [vercel.com](https://vercel.com)
+   - Click "New Project" and import your forked repository
+   - Vercel will automatically detect the configuration
 
-1. Click the deploy button above or fork this repository
-2. Connect your GitHub account to Vercel
-3. Set the `NOTION_API_KEY` environment variable in Vercel dashboard
-4. Deploy!
+3. **Set Environment Variable:**
+   - In Vercel dashboard, go to Project Settings > Environment Variables
+   - Add: `NOTION_API_KEY` = `your_notion_integration_token`
+   - Redeploy the project
 
-### Option 2: Railway
+4. **Get your Notion API key:**
+   - Visit [Notion Integrations](https://www.notion.so/my-integrations)
+   - Create a new integration
+   - Copy the "Internal Integration Token"
 
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https://github.com/jcotebcs/Notion-Law-Data-Collector)
+### Deploy to Railway
 
-1. Click the deploy button above
-2. Connect your GitHub account to Railway
-3. Set the `NOTION_API_KEY` environment variable in Railway dashboard
-4. Deploy!
+1. **Fork this repository** to your GitHub account
 
-### Option 3: Render
+2. **Deploy to Railway:**
+   - Visit [railway.app](https://railway.app)
+   - Click "Deploy from GitHub repo"
+   - Select your forked repository
 
-1. Fork this repository
-2. Create a new Web Service on [Render](https://render.com)
-3. Connect your forked repository
-4. Set build command: `npm install`
-5. Set start command: `npm start`
-6. Add `NOTION_API_KEY` environment variable
-7. Deploy!
+3. **Set Environment Variable:**
+   - In Railway dashboard, go to Variables tab
+   - Add: `NOTION_API_KEY` = `your_notion_integration_token`
+
+### Deploy to Render
+
+1. **Fork this repository** to your GitHub account
+
+2. **Create Web Service:**
+   - Visit [render.com](https://render.com)
+   - Click "New" > "Web Service"
+   - Connect your forked repository
+   - Set build command: `npm install`
+   - Set start command: `npm start`
+
+3. **Set Environment Variable:**
+   - In service settings, add environment variable
+   - `NOTION_API_KEY` = `your_notion_integration_token`
+
+### Verification
+
+After deployment:
+1. Visit your deployed URL
+2. Enter a database ID in the configuration section
+3. Click "Test Connection" - should work without CORS errors
+4. If connection fails, check that your environment variable is set correctly
+
+### Database Setup
+
+Before using the application, you need to:
+
+1. **Create a Notion Integration** at [notion.so/my-integrations](https://www.notion.so/my-integrations)
+2. **Create a database** in Notion with the required properties (see Setup Instructions)
+3. **Share the database** with your integration
+4. **Copy the database ID** from the URL
+
+The database ID is the 32-character string in your database URL:
+`https://notion.so/workspace/DATABASE_ID?v=...`
 
 ## Local Development
 

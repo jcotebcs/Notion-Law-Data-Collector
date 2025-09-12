@@ -46,7 +46,7 @@ export function setCorsHeaders(res) {
 export function handlePreflight(req, res) {
   if (req.method === 'OPTIONS') {
     setCorsHeaders(res);
-    res.status(200).end();
+    res.status(204).end();
     return true;
   }
   return false;
