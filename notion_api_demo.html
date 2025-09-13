@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notion API Lambda Proxy Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            backdrop-filter: blur(10px);
+        }
+        h1 {
+            color: #0366d6;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .form-section {
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #444;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #0366d6;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .response-section {
+            margin-top: 30px;
+        }
+        .response-content {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .note {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Notion API Lambda Proxy Demo</h1>
+        <p class="subtitle">Secure Notion API access through AWS Lambda proxy</p>
+        
+        <div class="note">
+            <strong>⚠️ Setup Required:</strong> Make sure you have deployed the Lambda function and configured the Notion API token in AWS Secrets Manager.
+            <br><br>
+            <strong>Database ID:</strong> This demo connects to database <code>40c4cef5c8cd4cb4891a35c3710df6e9</code>. 
+            Update the code to use your own database ID.
+        </div>
+
+        <div class="form-section">
+            <div class="form-group">
+                <label for="lambdaUrl">Lambda Function URL:</label>
+                <input type="url" id="lambdaUrl" placeholder="https://your-lambda-url.lambda-url.us-east-1.on.aws/" 
+                       value="https://your-lambda-url.lambda-url.us-east-1.on.aws/" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="httpMethod">HTTP Method:</label>
+                <select id="httpMethod">
+                    <option value="GET">GET - Retrieve database info</option>
+                    <option value="POST" selected>POST - Query database</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="requestBody">Request Body (JSON):</label>
+                <textarea id="requestBody" rows="6" placeholder='{"page_size": 10, "start_cursor": null}'>{
+  "page_size": 10,
+  "filter": {
+    "property": "Status",
+    "select": {
+      "equals": "Active"
+    }
+  },
+  "sorts": [
+    {
+      "property": "Created",
+      "direction": "descending"
+    }
+  ]
+}</textarea>
+            </div>
+            
+            <button id="sendRequest" onclick="sendNotionRequest()">
+                <span id="buttonText">Send Request</span>
+                <span id="loadingSpinner" class="loading" style="display: none;"></span>
+            </button>
+        </div>
+
+        <div class="response-section">
+            <h3>Response:</h3>
+            <div id="responseContainer" class="response-content">
+                Click "Send Request" to test the Notion API connection...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function sendNotionRequest() {
+            const button = document.getElementById('sendRequest');
+            const buttonText = document.getElementById('buttonText');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const responseContainer = document.getElementById('responseContainer');
+            const lambdaUrl = document.getElementById('lambdaUrl').value.trim();
+            const httpMethod = document.getElementById('httpMethod').value;
+            const requestBodyText = document.getElementById('requestBody').value.trim();
+            
+            // Validate inputs
+            if (!lambdaUrl) {
+                showResponse('Please enter the Lambda function URL', 'error');
+                return;
+            }
+            
+            // Disable button and show loading
+            button.disabled = true;
+            buttonText.style.display = 'none';
+            loadingSpinner.style.display = 'inline-block';
+            
+            try {
+                // Construct the full URL
+                const databaseId = '40c4cef5c8cd4cb4891a35c3710df6e9';
+                const endpoint = httpMethod === 'GET' ? 
+                    `${lambdaUrl.replace(/\/$/, '')}/databases/${databaseId}` :
+                    `${lambdaUrl.replace(/\/$/, '')}/databases/${databaseId}/query`;
+                
+                // Prepare request options
+                const requestOptions = {
+                    method: httpMethod,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Origin': window.location.origin
+                    }
+                };
+                
+                // Add body for POST requests
+                if (httpMethod === 'POST' && requestBodyText) {
+                    try {
+                        const requestBody = JSON.parse(requestBodyText);
+                        requestOptions.body = JSON.stringify(requestBody);
+                    } catch (e) {
+                        throw new Error(`Invalid JSON in request body: ${e.message}`);
+                    }
+                }
+                
+                showResponse(`Sending ${httpMethod} request to:\n${endpoint}\n\nRequest options:\n${JSON.stringify(requestOptions, null, 2)}\n\nWaiting for response...`, 'info');
+                
+                // Send the request
+                const response = await fetch(endpoint, requestOptions);
+                const responseData = await response.json();
+                
+                // Display response
+                const responseInfo = {
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: Object.fromEntries(response.headers.entries()),
+                    data: responseData
+                };
+                
+                const responseClass = response.ok ? 'success' : 'error';
+                showResponse(JSON.stringify(responseInfo, null, 2), responseClass);
+                
+            } catch (error) {
+                showResponse(`Error: ${error.message}\n\nCommon issues:\n1. Lambda function URL is incorrect\n2. Lambda function is not deployed\n3. Notion token is not configured in AWS Secrets Manager\n4. CORS issues (check browser console)\n5. Network connectivity problems`, 'error');
+            } finally {
+                // Re-enable button
+                button.disabled = false;
+                buttonText.style.display = 'inline';
+                loadingSpinner.style.display = 'none';
+            }
+        }
+        
+        function showResponse(text, type = 'info') {
+            const responseContainer = document.getElementById('responseContainer');
+            responseContainer.textContent = text;
+            responseContainer.className = `response-content ${type}`;
+        }
+        
+        // Update request body based on method selection
+        document.getElementById('httpMethod').addEventListener('change', function() {
+            const requestBody = document.getElementById('requestBody');
+            if (this.value === 'GET') {
+                requestBody.value = '// No body required for GET requests';
+                requestBody.disabled = true;
+            } else {
+                requestBody.disabled = false;
+                requestBody.value = `{
+  "page_size": 10,
+  "filter": {
+    "property": "Status",
+    "select": {
+      "equals": "Active"
+    }
+  },
+  "sorts": [
+    {
+      "property": "Created",
+      "direction": "descending"
+    }
+  ]
+}`;
+            }
+        });
+        
+        // Test CORS preflight on page load
+        window.addEventListener('load', function() {
+            showResponse('Notion API Lambda Proxy Demo loaded.\n\nThis demo shows how to use the AWS Lambda proxy to securely connect to the Notion API from a client-side application.\n\nFeatures:\n- Solves CORS issues with Notion API\n- Secure token management via AWS Secrets Manager\n- Comprehensive error handling\n- Support for all Notion API operations\n\nEnter your Lambda function URL above and click "Send Request" to test the connection.', 'info');
+        });
+    </script>
+</body>
+</html>

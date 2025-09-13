@@ -1,0 +1,391 @@
+name: Notion API Lambda Deployment
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      deploy_lambda:
+        description: 'Force deploy Lambda function'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  AWS_REGION: us-east-1
+  LAMBDA_FUNCTION_NAME: notion-api-proxy
+  PYTHON_VERSION: '3.9'
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        language: [node, python]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      if: matrix.language == 'node'
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Setup Python
+      if: matrix.language == 'python'
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+        
+    - name: Install Node.js dependencies
+      if: matrix.language == 'node'
+      run: npm ci
+      
+    - name: Install Python dependencies
+      if: matrix.language == 'python'
+      run: pip install -r requirements.txt
+      
+    - name: Lint Node.js code
+      if: matrix.language == 'node'
+      run: |
+        # Install eslint if package.json has lint script, otherwise skip
+        npm run lint --if-present || echo "No lint script found, skipping..."
+      
+    - name: Lint Python code
+      if: matrix.language == 'python'
+      run: |
+        # Install and run Python linting
+        pip install flake8 black
+        flake8 rapidapi_example.py lambda_function.py --max-line-length=88 --ignore=E203,W503 || echo "Linting completed with warnings"
+        black --check rapidapi_example.py lambda_function.py || echo "Code formatting check completed"
+      
+    - name: Test Node.js code
+      if: matrix.language == 'node'
+      run: npm test --if-present || echo "No tests found, skipping..."
+      
+    - name: Test Python code
+      if: matrix.language == 'python'
+      run: |
+        # Run basic syntax check and unit tests
+        python -m py_compile rapidapi_example.py lambda_function.py
+        echo "Python syntax check passed"
+        
+        # Run unit tests for Lambda function
+        python -m pytest test_lambda_function.py -v || echo "Some tests may have failed - check logs"
+
+  build-docker:
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    strategy:
+      matrix:
+        image: [node, python]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Build Docker image
+      run: |
+        docker build -f Dockerfile.${{ matrix.image }} -t rapid-api-generator-${{ matrix.image }}:latest .
+        
+    - name: Test Docker image
+      run: |
+        # Create a test .env file
+        echo "RAPIDAPI_KEY=test_key_for_ci" > .env
+        # Test that the image builds and runs without errors (will fail on API call but that's expected)
+        docker run --rm -v $(pwd)/.env:/app/.env rapid-api-generator-${{ matrix.image }}:latest || echo "Expected failure on API call with test key"
+
+  test-lambda-function:
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+        
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+        pip install moto[secretsmanager] # For mocking AWS services in tests
+        
+    - name: Run Lambda function unit tests
+      run: |
+        python -m pytest test_lambda_function.py -v --tb=short
+        
+    - name: Test Lambda function packaging
+      run: |
+        # Create deployment package
+        mkdir -p lambda-package
+        cp lambda_function.py lambda-package/
+        pip install -r requirements.txt -t lambda-package/
+        cd lambda-package && zip -r ../lambda-function.zip . && cd ..
+        echo "Lambda package size: $(du -h lambda-function.zip)"
+        
+    - name: Upload Lambda package as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: lambda-function-package
+        path: lambda-function.zip
+        retention-days: 7
+
+  deploy-lambda:
+    runs-on: ubuntu-latest
+    needs: [lint-and-test, build-docker, test-lambda-function]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' || github.event.inputs.deploy_lambda == 'true'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+        
+    - name: Verify AWS credentials
+      run: |
+        aws sts get-caller-identity
+        echo "AWS credentials configured successfully"
+        
+    - name: Check if Notion API secret exists
+      id: check-secret
+      run: |
+        SECRET_ARN=$(aws secretsmanager list-secrets --query "SecretList[?Name=='notion-api-token'].ARN" --output text)
+        if [ -z "$SECRET_ARN" ]; then
+          echo "secret_exists=false" >> $GITHUB_OUTPUT
+          echo "Creating new secret..."
+          SECRET_ARN=$(aws secretsmanager create-secret \
+            --name notion-api-token \
+            --description "Notion API token for Lambda proxy" \
+            --secret-string "PLACEHOLDER_TOKEN_REPLACE_AFTER_DEPLOYMENT" \
+            --query ARN --output text)
+          echo "Created secret with ARN: $SECRET_ARN"
+        else
+          echo "secret_exists=true" >> $GITHUB_OUTPUT
+          echo "Secret already exists with ARN: $SECRET_ARN"
+        fi
+        echo "secret_arn=$SECRET_ARN" >> $GITHUB_OUTPUT
+        
+    - name: Create Lambda execution role
+      id: create-role
+      run: |
+        ROLE_NAME="${LAMBDA_FUNCTION_NAME}-execution-role"
+        
+        # Check if role exists
+        if aws iam get-role --role-name "$ROLE_NAME" >/dev/null 2>&1; then
+          echo "Role $ROLE_NAME already exists"
+          ROLE_ARN=$(aws iam get-role --role-name "$ROLE_NAME" --query Role.Arn --output text)
+        else
+          echo "Creating IAM role: $ROLE_NAME"
+          
+          # Create trust policy
+          cat > trust-policy.json << EOF
+        {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        }
+        EOF
+          
+          # Create the role
+          ROLE_ARN=$(aws iam create-role \
+            --role-name "$ROLE_NAME" \
+            --assume-role-policy-document file://trust-policy.json \
+            --query Role.Arn --output text)
+          
+          # Attach basic execution policy
+          aws iam attach-role-policy \
+            --role-name "$ROLE_NAME" \
+            --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+          
+          # Create and attach secrets manager policy
+          cat > secrets-policy.json << EOF
+        {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "secretsmanager:GetSecretValue"
+              ],
+              "Resource": "${{ steps.check-secret.outputs.secret_arn }}"
+            }
+          ]
+        }
+        EOF
+          
+          aws iam put-role-policy \
+            --role-name "$ROLE_NAME" \
+            --policy-name SecretsManagerAccess \
+            --policy-document file://secrets-policy.json
+          
+          echo "Waiting for role to propagate..."
+          sleep 10
+        fi
+        
+        echo "role_arn=$ROLE_ARN" >> $GITHUB_OUTPUT
+        
+    - name: Package Lambda function
+      run: |
+        # Create clean package directory
+        rm -rf lambda-package
+        mkdir lambda-package
+        
+        # Copy function code
+        cp lambda_function.py lambda-package/
+        
+        # Install dependencies
+        pip install -r requirements.txt -t lambda-package/ --no-cache-dir
+        
+        # Remove unnecessary files to reduce package size
+        cd lambda-package
+        find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+        find . -type f -name "*.pyc" -delete 2>/dev/null || true
+        find . -type f -name "*.pyo" -delete 2>/dev/null || true
+        find . -type d -name "*.dist-info" -exec rm -rf {} + 2>/dev/null || true
+        find . -type d -name "tests" -exec rm -rf {} + 2>/dev/null || true
+        
+        # Create deployment package
+        zip -r ../lambda-function.zip . -x "*.git*" "*.DS_Store*"
+        cd ..
+        
+        echo "Lambda package created:"
+        ls -la lambda-function.zip
+        echo "Package size: $(du -h lambda-function.zip)"
+        
+    - name: Deploy Lambda function
+      id: deploy-lambda
+      run: |
+        FUNCTION_EXISTS=$(aws lambda get-function --function-name $LAMBDA_FUNCTION_NAME --query 'Configuration.FunctionName' --output text 2>/dev/null || echo "NOTFOUND")
+        
+        if [ "$FUNCTION_EXISTS" = "NOTFOUND" ]; then
+          echo "Creating new Lambda function: $LAMBDA_FUNCTION_NAME"
+          
+          aws lambda create-function \
+            --function-name $LAMBDA_FUNCTION_NAME \
+            --runtime python${{ env.PYTHON_VERSION }} \
+            --role ${{ steps.create-role.outputs.role_arn }} \
+            --handler lambda_function.lambda_handler \
+            --zip-file fileb://lambda-function.zip \
+            --timeout 30 \
+            --memory-size 256 \
+            --environment Variables="{NOTION_API_SECRET_ARN=${{ steps.check-secret.outputs.secret_arn }}}" \
+            --description "Notion API proxy for secure client-side access"
+          
+          echo "Lambda function created successfully"
+        else
+          echo "Updating existing Lambda function: $LAMBDA_FUNCTION_NAME"
+          
+          # Update function code
+          aws lambda update-function-code \
+            --function-name $LAMBDA_FUNCTION_NAME \
+            --zip-file fileb://lambda-function.zip
+          
+          # Update function configuration
+          aws lambda update-function-configuration \
+            --function-name $LAMBDA_FUNCTION_NAME \
+            --runtime python${{ env.PYTHON_VERSION }} \
+            --role ${{ steps.create-role.outputs.role_arn }} \
+            --handler lambda_function.lambda_handler \
+            --timeout 30 \
+            --memory-size 256 \
+            --environment Variables="{NOTION_API_SECRET_ARN=${{ steps.check-secret.outputs.secret_arn }}}"
+          
+          echo "Lambda function updated successfully"
+        fi
+        
+        # Get function URL if it exists, or create one
+        FUNCTION_URL=$(aws lambda get-function-url-config --function-name $LAMBDA_FUNCTION_NAME --query FunctionUrl --output text 2>/dev/null || echo "NOTFOUND")
+        
+        if [ "$FUNCTION_URL" = "NOTFOUND" ]; then
+          echo "Creating function URL..."
+          FUNCTION_URL=$(aws lambda create-function-url-config \
+            --function-name $LAMBDA_FUNCTION_NAME \
+            --cors AuthType=NONE,AllowCredentials=false,AllowHeaders=["*"],AllowMethods=["*"],AllowOrigins=["*"],MaxAge=3600 \
+            --auth-type NONE \
+            --query FunctionUrl --output text)
+          echo "Function URL created: $FUNCTION_URL"
+        else
+          echo "Function URL already exists: $FUNCTION_URL"
+        fi
+        
+        echo "function_url=$FUNCTION_URL" >> $GITHUB_OUTPUT
+        
+    - name: Test deployed Lambda function
+      run: |
+        echo "Testing deployed Lambda function..."
+        
+        # Test OPTIONS request (CORS preflight)
+        curl -X OPTIONS "${{ steps.deploy-lambda.outputs.function_url }}" \
+          -H "Origin: https://jcotebcs.github.io" \
+          -H "Access-Control-Request-Method: GET" \
+          -H "Access-Control-Request-Headers: Content-Type" \
+          -v || echo "OPTIONS test completed"
+        
+        # Test GET request (will fail without proper Notion token, but should return structured error)
+        echo "Testing GET request..."
+        curl -X GET "${{ steps.deploy-lambda.outputs.function_url }}databases/40c4cef5c8cd4cb4891a35c3710df6e9/query" \
+          -H "Content-Type: application/json" \
+          -v || echo "GET test completed (expected to fail without valid token)"
+        
+    - name: Output deployment information
+      run: |
+        echo "🚀 Deployment completed successfully!"
+        echo ""
+        echo "📋 Deployment Summary:"
+        echo "Function Name: $LAMBDA_FUNCTION_NAME"
+        echo "Function URL: ${{ steps.deploy-lambda.outputs.function_url }}"
+        echo "Secret ARN: ${{ steps.check-secret.outputs.secret_arn }}"
+        echo "Role ARN: ${{ steps.create-role.outputs.role_arn }}"
+        echo ""
+        echo "⚠️  IMPORTANT: Update the Notion API token in AWS Secrets Manager:"
+        echo "aws secretsmanager update-secret --secret-id ${{ steps.check-secret.outputs.secret_arn }} --secret-string 'YOUR_ACTUAL_NOTION_TOKEN'"
+        echo ""
+        echo "🔗 Use this URL in your client application:"
+        echo "${{ steps.deploy-lambda.outputs.function_url }}databases/40c4cef5c8cd4cb4891a35c3710df6e9/query"
+
+  deploy-pages:
+    runs-on: ubuntu-latest
+    needs: [lint-and-test, build-docker]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./
+        publish_branch: gh-pages
+        exclude_assets: '.github,node_modules,.git,.env*,Dockerfile*,lambda-package,lambda-function.zip,test_*.py'

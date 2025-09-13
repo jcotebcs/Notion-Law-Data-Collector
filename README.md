@@ -1,411 +1,291 @@
 
-# Notion Law Data Collector
+# Rapid_API-Generator
 
-A web application for collecting and organizing legal case data directly into your Notion database. This application features a React-like frontend with a serverless Node.js backend to resolve CORS restrictions and ensure secure API communication.
+A web-based tool for generating secure API client code instantly from any API endpoint. Features both a modern web interface and command-line examples for Python and Node.js.
 
-## Features
+## 🚀 NEW: Notion API Lambda Integration
 
-- 📝 **Easy Data Entry**: Intuitive form for entering legal case information
-- 🔗 **Direct Notion Integration**: Connects securely to your Notion database via serverless API
-- 📱 **Responsive Design**: Works on desktop, tablet, and mobile devices
-- 🔒 **Secure**: API keys stored server-side, protected from client exposure
-- ⚡ **Fast**: Serverless backend with optimized performance
-- 📊 **Recent Cases View**: See your latest entries at a glance
-- 🌐 **CORS-Free**: No browser restrictions when accessing Notion API
+**Solve the "Unexpected token '<'" error with secure serverless Notion API access!**
 
-## Architecture
+This repository now includes a comprehensive solution for integrating with the Notion API using AWS Lambda as a secure proxy. The solution addresses common CORS and authentication issues when connecting to Notion from client-side applications.
 
-This application uses a **serverless architecture** to resolve CORS (Cross-Origin Resource Sharing) issues:
+### ✨ Key Features of Notion Integration
 
-```
-Frontend (HTML/CSS/JS) → Serverless Backend → Notion API
-```
+- **🔒 Secure Authentication**: AWS Secrets Manager for token storage
+- **🌐 CORS-Enabled Proxy**: Serverless Lambda function for secure client-side access
+- **⚡ Auto-Deployment**: Complete GitHub Actions CI/CD pipeline
+- **🛡️ Security Best Practices**: Comprehensive IAM roles and permissions
+- **📊 Error Analysis**: Detailed troubleshooting guide for common issues
+- **🔄 Dynamic Data Source Handling**: Automatic data_source_id retrieval and caching
 
-### Why Serverless Backend?
+### 📋 Notion API Quick Start
 
-The original version made direct browser requests to Notion API, which caused CORS errors. The serverless backend acts as a secure proxy:
+1. **Deploy the Lambda Function**:
+   ```bash
+   # Set up your AWS credentials as GitHub Secrets:
+   # AWS_ACCESS_KEY_ID
+   # AWS_SECRET_ACCESS_KEY
+   
+   # Push to main branch to trigger automatic deployment
+   git push origin main
+   ```
 
-- **Resolves CORS**: Backend makes API calls on behalf of frontend
-- **Secure**: Notion API keys stored as environment variables on server
-- **Scalable**: Serverless functions auto-scale with demand
-- **Cost-Effective**: Only pay for actual usage
+2. **Configure Notion Token**:
+   ```bash
+   # After deployment, update the Notion token in AWS Secrets Manager
+   aws secretsmanager update-secret \
+     --secret-id notion-api-token \
+     --secret-string "secret_your_actual_notion_token_here"
+   ```
 
-## Deployment Guide
+3. **Use in Your Application**:
+   ```javascript
+   // Replace LAMBDA_URL with your deployed function URL
+   const response = await fetch('LAMBDA_URL/databases/40c4cef5c8cd4cb4891a35c3710df6e9/query', {
+     method: 'POST',
+     headers: {
+       'Content-Type': 'application/json'
+     },
+     body: JSON.stringify({
+       page_size: 10
+     })
+   });
+   
+   const data = await response.json();
+   console.log(data);
+   ```
 
-### 🚀 NEW: AWS Lambda Deployment (Recommended for Production)
+### 📚 Notion API Documentation
 
-For the most secure and scalable deployment, use our new AWS Lambda implementation with Python 3.9+ and GitHub Actions for automated deployment.
+- **[Troubleshooting Guide](./NOTION_API_TROUBLESHOOTING.md)**: Comprehensive error analysis and solutions
+- **[Security Guide](./SECURITY_GUIDE.md)**: Best practices for secure implementation
+- **[Lambda Function](./lambda_function.py)**: The core serverless proxy implementation
+- **[GitHub Actions Workflow](./github/workflows/notion-lambda-deploy.yml)**: Automated deployment pipeline
 
-**Key Benefits:**
-- ✅ **Enhanced Security**: API tokens stored in AWS Secrets Manager
-- ✅ **Latest Notion API**: Uses Notion API version 2025-09-03 with multi-source database support
-- ✅ **Automated Deployment**: Full CI/CD with GitHub Actions
-- ✅ **Error Analysis**: Built-in troubleshooting for "Unexpected token '<'" errors
-- ✅ **Comprehensive Testing**: Unit and integration tests included
+## 🌐 Web Interface
 
-📖 **[Complete AWS Lambda Setup Guide](AWS_LAMBDA_DEPLOYMENT.md)**
+Visit the **[Live Web Generator](https://jcotebcs.github.io/Rapid_API-Generator)** to instantly generate API client code:
 
-**Quick Start:**
-1. Run `./scripts/setup-aws.sh` to configure AWS resources
-2. Add GitHub Secrets (AWS credentials and ARNs)
-3. Push to main branch to trigger automated deployment
+### Features
+- **🎯 Simple Form Interface**: Enter API URL, select HTTP method, customize headers
+- **🔧 Multi-Language Support**: Generate both Python and Node.js client code
+- **📋 Copy & Download**: Easily copy code to clipboard or download as files
+- **🛡️ Security Best Practices**: Built-in environment variable management
+- **✨ Modern UI**: Clean, responsive design with tabbed code output
+- **🚀 Real-time Generation**: Instant code generation with live preview
 
----
+### How to Use
+1. Enter your API endpoint URL
+2. Select HTTP method (GET, POST, PUT, DELETE, PATCH)
+3. Customize API name and RapidAPI host (optional)
+4. Add additional headers in JSON format (optional)
+5. Click "Generate API Code"
+6. Copy or download the generated Python/Node.js code
+7. Use the provided .env template for secure API key management
 
-### Quick Deploy to Vercel (Alternative)
-
-1. **Fork this repository** to your GitHub account
-
-2. **Deploy to Vercel:**
-   - Visit [vercel.com](https://vercel.com)
-   - Click "New Project" and import your forked repository
-   - Vercel will automatically detect the configuration
-
-3. **Set Environment Variable:**
-   - In Vercel dashboard, go to Project Settings > Environment Variables
-   - Add: `NOTION_API_KEY` = `your_notion_integration_token`
-   - Redeploy the project
-
-4. **Get your Notion API key:**
-   - Visit [Notion Integrations](https://www.notion.so/my-integrations)
-   - Create a new integration
-   - Copy the "Internal Integration Token"
-
-### Deploy to Railway
-
-1. **Fork this repository** to your GitHub account
-
-2. **Deploy to Railway:**
-   - Visit [railway.app](https://railway.app)
-   - Click "Deploy from GitHub repo"
-   - Select your forked repository
-
-3. **Set Environment Variable:**
-   - In Railway dashboard, go to Variables tab
-   - Add: `NOTION_API_KEY` = `your_notion_integration_token`
-
-### Deploy to Render
-
-1. **Fork this repository** to your GitHub account
-
-2. **Create Web Service:**
-   - Visit [render.com](https://render.com)
-   - Click "New" > "Web Service"
-   - Connect your forked repository
-   - Set build command: `npm install`
-   - Set start command: `npm start`
-
-3. **Set Environment Variable:**
-   - In service settings, add environment variable
-   - `NOTION_API_KEY` = `your_notion_integration_token`
-
-### Verification
-
-After deployment:
-1. Visit your deployed URL
-2. Enter a database ID in the configuration section
-3. Click "Test Connection" - should work without CORS errors
-4. If connection fails, check that your environment variable is set correctly
-
-### Database Setup
-
-Before using the application, you need to:
-
-1. **Create a Notion Integration** at [notion.so/my-integrations](https://www.notion.so/my-integrations)
-2. **Create a database** in Notion with the required properties (see Setup Instructions)
-3. **Share the database** with your integration
-4. **Copy the database ID** from the URL
-
-The database ID is the 32-character string in your database URL:
-`https://notion.so/workspace/DATABASE_ID?v=...`
-
-## Local Development
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- Node.js 18+ 
-- npm or yarn
-- A Notion integration token
+- Python 3.7+ (for Python example)
+- Node.js 14+ (for Node.js example)
+- A RapidAPI account and API key
 
 ### Setup
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/jcotebcs/Notion-Law-Data-Collector.git
-   cd Notion-Law-Data-Collector
+   git clone https://github.com/jcotebcs/Rapid_API-Generator.git
+   cd Rapid_API-Generator
    ```
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Set up environment variables**
+2. **Create your environment file**
    ```bash
    cp .env.example .env
-   # Edit .env and add your NOTION_API_KEY
    ```
 
-4. **Start development server**
-   ```bash
-   npm run dev
+3. **Add your RapidAPI key to the `.env` file**
+   ```env
+   RAPIDAPI_KEY=your_actual_rapidapi_key_here
    ```
 
-5. **Open in browser**
-   ```
-   http://localhost:3000
-   ```
+   ⚠️ **Important**: Never commit your `.env` file to version control! It's already added to `.gitignore` for your security.
 
-## Environment Variables
+## 🐍 Python Example
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `NOTION_API_KEY` | Your Notion integration token (starts with `secret_`) | Yes |
-| `NODE_ENV` | Environment (`development` or `production`) | No |
-
-## API Endpoints
-
-The serverless backend provides three main endpoints:
-
-### `GET /api/testConnection`
-
-Tests connection to Notion database.
-
-**Parameters:**
-- `databaseId` (query): The Notion database ID
-
-**Response:**
-```json
-{
-  "error": false,
-  "data": {
-    "id": "database-id",
-    "title": [...],
-    "properties": ["Title", "Case Number", ...],
-    "created_time": "...",
-    "last_edited_time": "..."
-  }
-}
+### Install Dependencies
+```bash
+pip install -r requirements.txt
 ```
 
-### `POST /api/createPage`
-
-Creates a new page in the Notion database.
-
-**Body:**
-```json
-{
-  "databaseId": "your-database-id",
-  "properties": {
-    "Title": {
-      "title": [{"text": {"content": "Case Title"}}]
-    },
-    // ... other properties
-  }
-}
+### Run the Python Example
+```bash
+python rapidapi_example.py
 ```
 
-**Response:**
-```json
-{
-  "error": false,
-  "data": {
-    "id": "page-id",
-    "url": "notion-page-url",
-    "created_time": "...",
-    "properties": {...}
-  }
-}
+The Python example uses:
+- `requests` library for HTTP requests
+- `python-dotenv` for loading environment variables from `.env` file
+
+## 🟢 Node.js Example
+
+### Install Dependencies
+```bash
+npm install
 ```
 
-### `POST /api/queryDatabase`
-
-Queries the Notion database for existing pages.
-
-**Body:**
-```json
-{
-  "databaseId": "your-database-id",
-  "sorts": [...],
-  "page_size": 5,
-  "filter": {...} // optional
-}
+### Run the Node.js Example
+```bash
+npm start
+# or
+node rapidapi_example.js
 ```
 
-**Response:**
-```json
-{
-  "error": false,
-  "data": {
-    "results": [...],
-    "next_cursor": "...",
-    "has_more": false
-  }
-}
+The Node.js example uses:
+- `axios` library for HTTP requests
+- `dotenv` for loading environment variables from `.env` file
+
+## 📁 Project Structure
+
+```
+Rapid_API-Generator/
+├── .env.example                    # Template for environment variables
+├── .gitignore                     # Git ignore rules (includes .env)
+├── requirements.txt               # Python dependencies (includes AWS SDK)
+├── package.json                   # Node.js dependencies
+├── rapidapi_example.py            # Python example script
+├── rapidapi_example.js            # Node.js example script
+├── Dockerfile.node                # Docker configuration for Node.js
+├── Dockerfile.python              # Docker configuration for Python
+├── lambda_function.py             # 🆕 AWS Lambda function for Notion API proxy
+├── test_lambda_function.py        # 🆕 Comprehensive unit tests for Lambda
+├── NOTION_API_TROUBLESHOOTING.md  # 🆕 Detailed error analysis and solutions
+├── SECURITY_GUIDE.md              # 🆕 Security best practices documentation
+├── .github/
+│   └── workflows/
+│       ├── deploy.yml             # Original CI/CD pipeline
+│       └── notion-lambda-deploy.yml # 🆕 Notion Lambda deployment pipeline
+└── README.md                      # This file
 ```
 
-## Setup Instructions
+## 🚀 Deployment
 
-### 1. Create a Notion Integration
+### Docker Deployment
 
-1. Go to [Notion Integrations](https://www.notion.so/my-integrations)
-2. Click "New integration"
-3. Give it a name like "Law Data Collector"
-4. Select the workspace where your database will be
-5. Copy the "Internal Integration Token" (starts with `secret_`)
+Both examples can be containerized using Docker for consistent deployment across environments.
 
-### 2. Create a Notion Database
+#### Building Docker Images
 
-1. Create a new page in Notion
-2. Add a database with these properties:
-   - **Title** (Title) - Case title
-   - **Case Number** (Rich Text) - Case reference number
-   - **Court** (Rich Text) - Court name
-   - **Judge** (Rich Text) - Judge name
-   - **Date** (Date) - Case date
-   - **Status** (Select) - Case status (Pending, Active, Closed, Appeal)
-   - **Parties** (Rich Text) - Parties involved
-   - **Type** (Select) - Case type (Civil, Criminal, Family, etc.)
-   - **Summary** (Rich Text) - Case summary
-   - **Outcome** (Rich Text) - Case outcome or ruling
-   - **Tags** (Multi-select) - Case tags
-   - **Priority** (Select) - Priority level (Low, Medium, High, Urgent)
+```bash
+# Build Node.js image
+npm run docker:build:node
 
-3. Share the database with your integration:
-   - Click the "Share" button on your database page
-   - Click "Invite" and search for your integration name
-   - Give it "Edit" permissions
+# Build Python image  
+npm run docker:build:python
 
-4. Copy the database ID from the URL (32-character string)
+# Build both images
+npm run docker:build
+```
 
-### 3. Deploy the Application
+#### Running with Docker
 
-Choose one of the deployment options above (Vercel, Railway, or Render) and set the `NOTION_API_KEY` environment variable.
+```bash
+# Ensure you have a .env file with your RAPIDAPI_KEY
+cp .env.example .env
+# Edit .env with your actual API key
 
-### 4. Configure the Application
+# Run Node.js example
+npm run docker:run:node
 
-1. Open your deployed application in the browser
-2. Paste your database ID in the "Database ID" field
-3. Click "Test Connection" to verify everything works
-4. Start adding case data!
+# Run Python example
+npm run docker:run:python
+```
 
-## Data Fields
+### Manual Docker Commands
 
-The application supports the following case data fields:
+```bash
+# Build images manually
+docker build -f Dockerfile.node -t rapid-api-generator-node:latest .
+docker build -f Dockerfile.python -t rapid-api-generator-python:latest .
 
-- **Case Title** (Required) - The name/title of the case
-- **Case Number** - Official case reference number
-- **Court** - Name of the court handling the case
-- **Judge** - Name of the presiding judge
-- **Case Date** - Important date related to the case
-- **Status** - Current status (Pending, Active, Closed, Appeal)
-- **Parties Involved** - Plaintiff vs Defendant information
-- **Case Type** - Type of case (Civil, Criminal, Family, Corporate, Constitutional, Administrative)
-- **Case Summary** - Brief description of the case
-- **Outcome/Ruling** - Court decision or current status
-- **Tags** - Comma-separated tags for categorization
-- **Priority** - Priority level (Low, Medium, High, Urgent)
+# Run containers manually
+docker run --rm --env-file .env rapid-api-generator-node:latest
+docker run --rm --env-file .env rapid-api-generator-python:latest
+```
 
-## Security & Privacy
+### CI/CD Pipeline
 
-- **Enhanced Security**: Notion API keys stored securely on the server, never exposed to browsers
-- **Data Privacy**: Only database IDs are stored locally in your browser
-- **No Third-Party Storage**: No data is stored or cached by the application
-- **Direct API Connection**: Secure server-to-server communication with Notion
+The project includes two GitHub Actions workflows:
 
-## Technology Stack
+1. **Original Pipeline** (`.github/workflows/deploy.yml`):
+   - **Lints and tests** both Node.js and Python code on every push and pull request
+   - **Builds Docker images** to ensure containerization works correctly
+   - **Deploys to GitHub Pages** on successful builds to the main branch
 
-**Frontend:**
-- HTML5
-- CSS3 (with CSS Grid and Flexbox)
-- Vanilla JavaScript (ES6+)
+2. **🆕 Notion Lambda Pipeline** (`.github/workflows/notion-lambda-deploy.yml`):
+   - **Comprehensive testing** of Lambda function with unit tests
+   - **Secure AWS deployment** with IAM role creation and management
+   - **Secrets Manager integration** for secure token storage
+   - **Automated Lambda deployment** with function URL configuration
+   - **Integration testing** to verify end-to-end functionality
 
-**Backend:**
-- Node.js 18+
-- Express.js
-- Axios for HTTP requests
-- CORS middleware
-- Notion API v2025-09-03
+Both pipelines run automatically and ensure code quality and deployment readiness.
 
-**Deployment:**
-- Serverless functions (Vercel, Railway, Render)
-- Environment-based configuration
-- Auto-scaling infrastructure
+### Environment Variables for Production
 
-## Browser Compatibility
+For production deployments, ensure you set the following environment variables:
 
-This application works in all modern browsers that support:
-- ES6+ JavaScript features
-- Fetch API
-- Local Storage
-- CSS Grid and Flexbox
+#### Original RapidAPI Integration:
+- `RAPIDAPI_KEY`: Your production RapidAPI key
+- `NODE_ENV`: Set to `production` for optimized performance
+- `RAPIDAPI_HOST`: Override if using a different API host
 
-## Contributing
+#### 🆕 Notion API Integration:
+- `AWS_ACCESS_KEY_ID`: AWS access key for deployment (GitHub Secret)
+- `AWS_SECRET_ACCESS_KEY`: AWS secret key for deployment (GitHub Secret)
+- `NOTION_API_SECRET_ARN`: Automatically set by deployment pipeline
+- `AWS_DEFAULT_REGION`: AWS region for Lambda deployment (default: us-east-1)
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Install dependencies (`npm install`)
-4. Set up your `.env` file with `NOTION_API_KEY`
-5. Make your changes
-6. Test thoroughly (`npm run dev`)
-7. Commit your changes (`git commit -m 'Add amazing feature'`)
-8. Push to the branch (`git push origin feature/amazing-feature`)
-9. Open a Pull Request
+### Security Considerations for Deployment
 
-## Troubleshooting
+#### Original RapidAPI Integration:
+- Never expose your `.env` file in production
+- Use separate API keys for development, staging, and production
+- Consider using container orchestration (Kubernetes, Docker Swarm) for scalability
+- Implement proper logging and monitoring in production environments
 
-### Fixing "Unexpected token '<'" Error
+#### 🆕 Notion API Integration:
+- **AWS Secrets Manager**: Secure token storage with encryption at rest and in transit
+- **IAM Least Privilege**: Minimal permissions for Lambda execution and GitHub Actions
+- **CORS Configuration**: Properly configured for production domains
+- **Input Validation**: Comprehensive request validation and sanitization
+- **Error Handling**: Secure error responses without information leakage
+- **Audit Logging**: CloudWatch integration for monitoring and compliance
 
-This common error occurs when HTML is returned instead of JSON. Our AWS Lambda implementation resolves this by:
+## 🔧 Customization
 
-1. **Eliminating CORS Issues**: Server-side API calls bypass browser restrictions
-2. **Proper Authentication**: Secure token management via AWS Secrets Manager
-3. **Correct API Endpoints**: Validated endpoints for Notion API 2025-09-03
-4. **Enhanced Error Handling**: Detailed error analysis and troubleshooting
+Both example scripts are templates that demonstrate secure API key management. To use them with actual RapidAPI endpoints:
 
-**For immediate troubleshooting:**
-- Ensure you're using the deployed version (not opening HTML files directly)
-- Check that your Notion integration has database access
-- Verify your API token is correctly formatted (starts with `secret_`)
+1. Replace the `url` variable with your specific RapidAPI endpoint
+2. Update the `X-RapidAPI-Host` header with the correct host for your API
+3. Modify the request parameters as needed for your specific API
 
-**Complete troubleshooting guide:** [AWS Lambda Deployment Guide](AWS_LAMBDA_DEPLOYMENT.md#error-analysis-and-troubleshooting)
+## 🔒 Security Best Practices
 
----
+- ✅ Store API keys in environment variables (`.env` file)
+- ✅ Add `.env` to `.gitignore` to prevent accidental commits
+- ✅ Use `.env.example` as a template for other developers
+- ✅ Never hardcode API keys in your source code
+- ✅ Use different API keys for development, staging, and production
 
-### Common Issues
+## 📚 Learn More
 
-**CORS Errors:**
-- This should no longer occur with the serverless backend
-- If you see CORS errors, ensure you're using the deployed version, not opening `index.html` directly
+- [RapidAPI Documentation](https://docs.rapidapi.com/)
+- [Python Requests Documentation](https://requests.readthedocs.io/)
+- [Axios Documentation](https://axios-http.com/)
+- [Python-dotenv Documentation](https://pypi.org/project/python-dotenv/)
+- [Node.js dotenv Documentation](https://www.npmjs.com/package/dotenv)
 
-**Connection Failed:**
-- Verify your `NOTION_API_KEY` is set correctly in your deployment environment
-- Check that your database ID is exactly 32 characters
-- Ensure your Notion integration has access to the database
+## 🤝 Contributing
 
-**Database Not Found:**
-- Verify the database ID in the URL
-- Make sure you've shared the database with your integration
-- Check that the integration has "Edit" permissions
-
-**API Errors:**
-- Check the browser console for detailed error messages
-- Verify all required database properties exist
-- Ensure property types match what the application expects
-
-### Getting Help
-
-1. Check the browser console for error messages
-2. Verify your Notion integration setup
-3. Test your integration using the "Test Connection" button
-4. Open an issue on GitHub with details about your problem
-
-## License
-
-This project is open source and available under the [MIT License](LICENSE).
-
-## Acknowledgments
-
-- Built for the legal community to streamline case data management
-- Powered by Notion's robust API and database capabilities
-- Designed with privacy and security as top priorities
+Feel free to submit issues and pull requests to improve these examples!
