@@ -45,7 +45,7 @@ export default async function handler(req, res) {
     // First, fetch the database to get data_source_id (required for 2025-09-03 API)
     let dbResponse;
     try {
-      dbResponse = await notion.get(`/databases/${databaseId}`);
+      dbResponse = await safeNotionRequest(notion, 'get', `/databases/${databaseId}`);
     } catch (err) {
       if (err.response && err.response.status === 404) {
         return sendError(res, new Error('Database not found or integration lacks access'), 404);
