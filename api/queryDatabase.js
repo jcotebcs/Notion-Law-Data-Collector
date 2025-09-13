@@ -40,17 +40,37 @@ export default async function handler(req, res) {
       ...(req.body.start_cursor && { start_cursor: req.body.start_cursor })
     };
 
-    // Create Notion client and make request using safe handler
+    // Create Notion client
     const notion = createNotionClient();
-    const response = await safeNotionRequest(notion, 'post', `/databases/${databaseId}/query`, queryData);
-
-    // Return success with query results
+    // First, fetch the database to get data_source_id (required for 2025-09-03 API)
+    let dbResponse;
+    try {
+      dbResponse = await notion.get(`/databases/${databaseId}`);
+    } catch (err) {
+      if (err.response && err.response.status === 404) {
+        return sendError(res, new Error('Database not found or integration lacks access'), 404);
+      } else if (err.response && err.response.status === 401) {
+    // Query the data source instead of the database directly
+    const response = await safeNotionRequest(() =>
+      notion.post(`/data_sources/${data_source_id}/query`, queryData)
+    );
+    sendSuccess(res, {
+    if (!dbResponse.data || !dbResponse.data.data_sources) {
+      return sendError(res, new Error('Failed to fetch database data sources'), 500);
+    }
+    const data_sources = dbResponse.data.data_sources;
+    if (!data_sources || data_sources.length === 0) {
+      return sendError(res, new Error('Database has no data sources available'), 400);
+    }
+      return sendError(res, new Error('Database has no data sources available'), 400);
+    }
+    // Use the first data source for querying
+    const data_source_id = data_sources[0].id;
+    // Query the data source instead of the database directly
+    const response = await notion.post(`/data_sources/${data_source_id}/query`, queryData);
     sendSuccess(res, {
       results: response.data.results,
       next_cursor: response.data.next_cursor,
-      has_more: response.data.has_more,
-      type: response.data.type,
-      page_or_database: response.data.page_or_database
     });
 
   } catch (error) {
