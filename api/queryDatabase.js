@@ -42,6 +42,9 @@ export default async function handler(req, res) {
 
     // Create Notion client
     const notion = createNotionClient();
+    // As of Notion API version 2025-09-03, querying databases must be done via data sources.
+    // Previously, queries were sent directly to /databases/{databaseId}/query, but now require
+    // fetching the database's data_sources and using /data_sources/{data_source_id}/query instead.
     // First, fetch the database to get data_source_id (required for 2025-09-03 API)
     let dbResponse;
     try {
@@ -67,8 +70,8 @@ export default async function handler(req, res) {
 
     // Use the first data source for querying
     const data_source_id = data_sources[0].id;
-    // Query the data source instead of the database directly
-    const response = await notion.post(`/data_sources/${data_source_id}/query`, queryData);
+    // Query the data source using safeNotionRequest for consistent error handling
+    const response = await safeNotionRequest(notion, 'post', `/data_sources/${data_source_id}/query`, queryData);
     sendSuccess(res, {
       results: response.data.results,
       next_cursor: response.data.next_cursor,

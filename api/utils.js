@@ -176,7 +176,7 @@ export async function safeNotionRequest(notionClient, method, url, data = null) 
         response = await notionClient.delete(url);
         break;
       default:
-        throw new Error(`Unsupported HTTP method: ${method}`);
+        throw new Error(`Unsupported HTTP method: ${method}. Supported methods are: GET, POST, PUT, DELETE`);
     }
     
     // Validate that we received a proper JSON response

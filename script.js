@@ -15,7 +15,13 @@ class NotionLawCollector {
             const text = await response.text();
             
             // Log raw response in development for debugging
-            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            const isDevEnv =
+                window.location.hostname === 'localhost' ||
+                window.location.hostname === '127.0.0.1' ||
+                window.location.hostname === '[::1]' ||
+                window.location.hostname.endsWith('.local') ||
+                (window.ENV && window.ENV === 'development');
+            if (isDevEnv) {
                 console.log('Raw API Response:', {
                     status: response.status,
                     statusText: response.statusText,
