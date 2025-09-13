@@ -1,4 +1,4 @@
-import { createNotionClient, handlePreflight, sendError, sendSuccess, validateRequired } from './utils.js';
+import { createNotionClient, handlePreflight, sendError, sendSuccess, safeNotionRequest } from './utils.js';
 
 /**
  * Create a new page in Notion database
@@ -32,7 +32,7 @@ export default async function handler(req, res) {
       return sendError(res, new Error('Title property is required'), 400);
     }
 
-    // Create Notion client and make request
+    // Create Notion client and make request using safe handler
     const notion = createNotionClient();
     
     const pageData = {
@@ -42,7 +42,7 @@ export default async function handler(req, res) {
       properties: properties
     };
 
-    const response = await notion.post('/pages', pageData);
+    const response = await safeNotionRequest(notion, 'post', '/pages', pageData);
 
     // Return success with created page info
     sendSuccess(res, {

@@ -1,4 +1,4 @@
-import { createNotionClient, handlePreflight, sendError, sendSuccess, validateRequired } from './utils.js';
+import { createNotionClient, handlePreflight, sendError, sendSuccess, safeNotionRequest } from './utils.js';
 
 /**
  * Test connection to Notion database
@@ -27,9 +27,9 @@ export default async function handler(req, res) {
       return sendError(res, new Error('Invalid database ID format'), 400);
     }
 
-    // Create Notion client and make request
+    // Create Notion client and make request using safe handler
     const notion = createNotionClient();
-    const response = await notion.get(`/databases/${databaseId}`);
+    const response = await safeNotionRequest(notion, 'get', `/databases/${databaseId}`);
 
     // Return success with database info
     sendSuccess(res, {

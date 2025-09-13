@@ -355,6 +355,21 @@ This application works in all modern browsers that support:
 - Verify all required database properties exist
 - Ensure property types match what the application expects
 
+**HTML Error Pages (NEW):**
+- If you receive "Server returned HTML error page instead of JSON" messages, this indicates server configuration issues
+- Check your server logs for detailed error information
+- Ensure your deployment environment variables are correctly set
+- The application now logs raw responses for debugging in development mode
+
+### Enhanced Error Handling
+
+This application now includes improved error handling to address common issues:
+
+- **Raw Response Logging**: All API responses are logged in development mode for debugging
+- **HTML Error Detection**: The system detects when HTML error pages are returned instead of JSON
+- **Detailed Error Messages**: More specific error messages for common failure scenarios
+- **Consistent JSON Responses**: All API endpoints return consistent JSON error formats
+
 ### Getting Help
 
 1. Check the browser console for error messages

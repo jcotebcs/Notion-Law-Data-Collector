@@ -1,4 +1,4 @@
-import { createNotionClient, handlePreflight, sendError, sendSuccess } from './utils.js';
+import { createNotionClient, handlePreflight, sendError, sendSuccess, safeNotionRequest } from './utils.js';
 
 /**
  * Query a Notion database
@@ -40,9 +40,9 @@ export default async function handler(req, res) {
       ...(req.body.start_cursor && { start_cursor: req.body.start_cursor })
     };
 
-    // Create Notion client and make request
+    // Create Notion client and make request using safe handler
     const notion = createNotionClient();
-    const response = await notion.post(`/databases/${databaseId}/query`, queryData);
+    const response = await safeNotionRequest(notion, 'post', `/databases/${databaseId}/query`, queryData);
 
     // Return success with query results
     sendSuccess(res, {

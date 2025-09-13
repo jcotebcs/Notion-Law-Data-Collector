@@ -5,6 +5,43 @@ class NotionLawCollector {
         this.init();
     }
 
+    /**
+     * Safely parses JSON response and logs raw response for debugging
+     * This helps identify HTML error pages being returned instead of JSON
+     */
+    async safeJsonParse(response) {
+        try {
+            // Get raw response text first
+            const text = await response.text();
+            
+            // Log raw response in development for debugging
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                console.log('Raw API Response:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: Object.fromEntries(response.headers.entries()),
+                    body: text.substring(0, 500) // First 500 chars for debugging
+                });
+            }
+            
+            // Check if response looks like HTML (common issue)
+            if (text.includes('<!DOCTYPE html>') || text.includes('<html>')) {
+                console.error('⚠️  Received HTML response instead of JSON');
+                throw new Error('Server returned HTML error page instead of JSON. This may indicate a server configuration issue.');
+            }
+            
+            // Try to parse as JSON
+            return JSON.parse(text);
+            
+        } catch (error) {
+            if (error instanceof SyntaxError) {
+                console.error('Failed to parse JSON response:', error);
+                throw new Error('Invalid JSON response from server. Please check server logs.');
+            }
+            throw error;
+        }
+    }
+
     init() {
         this.loadConfig();
         this.bindEvents();
@@ -53,7 +90,7 @@ class NotionLawCollector {
                 }
             });
 
-            const result = await response.json();
+            const result = await this.safeJsonParse(response);
             
             if (response.ok && !result.error) {
                 const data = result.data;
@@ -86,7 +123,7 @@ class NotionLawCollector {
         try {
             const formData = this.getFormData();
             const response = await this.createNotionPage(formData);
-            const result = await response.json();
+            const result = await this.safeJsonParse(response);
             
             if (response.ok && !result.error) {
                 this.showNotification('Case saved successfully!', 'success');
@@ -281,7 +318,7 @@ class NotionLawCollector {
                 })
             });
 
-            const result = await response.json();
+            const result = await this.safeJsonParse(response);
             
             if (response.ok && !result.error) {
                 this.displayRecentCases(result.data.results);
