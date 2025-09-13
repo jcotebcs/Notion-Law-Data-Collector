@@ -32,7 +32,7 @@ export default async function handler(req, res) {
       return sendError(res, new Error('Title property is required'), 400);
     }
 
-    // Create Notion client and make request using safe handler
+      // Create Notion client and make request using safe handler
     const notion = createNotionClient();
     
     const pageData = {
