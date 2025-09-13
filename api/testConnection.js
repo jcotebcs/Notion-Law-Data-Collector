@@ -27,7 +27,7 @@ export default async function handler(req, res) {
       return sendError(res, new Error('Invalid database ID format'), 400);
     }
 
-    // Create Notion client and make request
+    // Create Notion client and make request using safe handler
     const notion = createNotionClient();
     const response = await notion.get(`/databases/${databaseId}`);
 
