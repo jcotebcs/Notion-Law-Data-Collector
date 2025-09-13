@@ -62,3 +62,33 @@ test-integration.js
 # Backup files
 *.bak
 *.backup
+
+# AWS Lambda specific
+lambda/package/
+*.zip
+.aws-setup-config
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.pytest_cache/
+
+# AWS
+*.pem

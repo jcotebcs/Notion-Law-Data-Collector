@@ -139,7 +139,7 @@ class TestSecretsManager(unittest.TestCase):
         self.assertEqual(token, "secret_test_token")
         mock_client.get_secret_value.assert_called_once_with(SecretId='test-arn')
     
-    @patch.dict(os.environ, {}, clear=True)
+    @patch.dict(os.environ, {'AWS_DEFAULT_REGION': 'us-east-1'}, clear=True)
     def test_get_notion_token_no_arn(self):
         """Test token retrieval without ARN environment variable"""
         with self.assertRaises(ValueError) as cm:
