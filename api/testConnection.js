@@ -31,11 +31,19 @@ export default async function handler(req, res) {
     const notion = createNotionClient();
     const response = await notion.get(`/databases/${databaseId}`);
 
-    // Return success with database info
+    // Check if database has data sources (required for 2025-09-03 API)
+    const data_sources = response.data.data_sources;
+    if (!data_sources || data_sources.length === 0) {
+      return sendError(res, new Error('Database has no data sources available'), 400);
+    }
+
+    // Return success with database info including data sources
     sendSuccess(res, {
       id: response.data.id,
       title: response.data.title,
       properties: Object.keys(response.data.properties),
+      data_sources: data_sources,
+      primary_data_source_id: data_sources[0].id, // Use first data source as primary
       created_time: response.data.created_time,
       last_edited_time: response.data.last_edited_time
     });

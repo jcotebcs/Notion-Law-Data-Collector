@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Load environment variables
 const NOTION_API_KEY = process.env.NOTION_API_KEY;
-const NOTION_VERSION = '2022-06-28';
+const NOTION_VERSION = '2025-09-03';
 const NOTION_BASE_URL = 'https://api.notion.com/v1';
 
 /**

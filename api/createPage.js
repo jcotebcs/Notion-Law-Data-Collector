@@ -32,12 +32,24 @@ export default async function handler(req, res) {
       return sendError(res, new Error('Title property is required'), 400);
     }
 
-    // Create Notion client and make request
+    // Create Notion client
     const notion = createNotionClient();
+    
+    // First, fetch the database to get data_source_id (required for 2025-09-03 API)
+    const dbResponse = await notion.get(`/databases/${databaseId}`);
+    const data_sources = dbResponse.data.data_sources;
+    
+    if (!data_sources || data_sources.length === 0) {
+      return sendError(res, new Error('Database has no data sources available'), 400);
+    }
+    
+    // Use the first data source (adapt if multiple sources needed)
+    const data_source_id = data_sources[0].id;
     
     const pageData = {
       parent: {
-        database_id: databaseId
+        type: "data_source_id",
+        data_source_id: data_source_id
       },
       properties: properties
     };

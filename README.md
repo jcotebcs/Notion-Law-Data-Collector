@@ -305,7 +305,7 @@ The application supports the following case data fields:
 - Express.js
 - Axios for HTTP requests
 - CORS middleware
-- Notion API v2022-06-28
+- Notion API v2025-09-03
 
 **Deployment:**
 - Serverless functions (Vercel, Railway, Render)
