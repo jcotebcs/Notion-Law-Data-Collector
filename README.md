@@ -32,7 +32,27 @@ The original version made direct browser requests to Notion API, which caused CO
 
 ## Deployment Guide
 
-### Quick Deploy to Vercel (Recommended)
+### 🚀 NEW: AWS Lambda Deployment (Recommended for Production)
+
+For the most secure and scalable deployment, use our new AWS Lambda implementation with Python 3.9+ and GitHub Actions for automated deployment.
+
+**Key Benefits:**
+- ✅ **Enhanced Security**: API tokens stored in AWS Secrets Manager
+- ✅ **Latest Notion API**: Uses Notion API version 2025-09-03 with multi-source database support
+- ✅ **Automated Deployment**: Full CI/CD with GitHub Actions
+- ✅ **Error Analysis**: Built-in troubleshooting for "Unexpected token '<'" errors
+- ✅ **Comprehensive Testing**: Unit and integration tests included
+
+📖 **[Complete AWS Lambda Setup Guide](AWS_LAMBDA_DEPLOYMENT.md)**
+
+**Quick Start:**
+1. Run `./scripts/setup-aws.sh` to configure AWS resources
+2. Add GitHub Secrets (AWS credentials and ARNs)
+3. Push to main branch to trigger automated deployment
+
+---
+
+### Quick Deploy to Vercel (Alternative)
 
 1. **Fork this repository** to your GitHub account
 
@@ -333,6 +353,24 @@ This application works in all modern browsers that support:
 9. Open a Pull Request
 
 ## Troubleshooting
+
+### Fixing "Unexpected token '<'" Error
+
+This common error occurs when HTML is returned instead of JSON. Our AWS Lambda implementation resolves this by:
+
+1. **Eliminating CORS Issues**: Server-side API calls bypass browser restrictions
+2. **Proper Authentication**: Secure token management via AWS Secrets Manager
+3. **Correct API Endpoints**: Validated endpoints for Notion API 2025-09-03
+4. **Enhanced Error Handling**: Detailed error analysis and troubleshooting
+
+**For immediate troubleshooting:**
+- Ensure you're using the deployed version (not opening HTML files directly)
+- Check that your Notion integration has database access
+- Verify your API token is correctly formatted (starts with `secret_`)
+
+**Complete troubleshooting guide:** [AWS Lambda Deployment Guide](AWS_LAMBDA_DEPLOYMENT.md#error-analysis-and-troubleshooting)
+
+---
 
 ### Common Issues
 
