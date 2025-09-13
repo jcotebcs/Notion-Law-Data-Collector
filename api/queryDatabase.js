@@ -50,6 +50,11 @@ export default async function handler(req, res) {
     try {
       dbResponse = await safeNotionRequest(notion, 'get', `/databases/${databaseId}`);
     } catch (err) {
+      // Handle HTML responses (API gateway/proxy errors)
+      if (err.isHtmlResponse) {
+        return sendError(res, new Error('Received HTML error page instead of JSON response. This may indicate API gateway issues or incorrect endpoint configuration.'), 502);
+      }
+      
       if (err.response && err.response.status === 404) {
         return sendError(res, new Error('Database not found or integration lacks access'), 404);
       } else if (err.response && err.response.status === 401) {
@@ -78,6 +83,11 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
+    // Handle HTML responses (API gateway/proxy errors)
+    if (error.isHtmlResponse) {
+      return sendError(res, new Error('Received HTML error page instead of JSON response. This may indicate API gateway issues or incorrect endpoint configuration.'), 502);
+    }
+    
     // Handle Notion API errors specifically
     if (error.response) {
       const status = error.response.status;

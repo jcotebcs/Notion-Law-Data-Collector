@@ -53,6 +53,11 @@ export default async function handler(req, res) {
     }, 201);
 
   } catch (error) {
+    // Handle HTML responses (API gateway/proxy errors)
+    if (error.isHtmlResponse) {
+      return sendError(res, new Error('Received HTML error page instead of JSON response. This may indicate API gateway issues or incorrect endpoint configuration.'), 502);
+    }
+    
     // Handle Notion API errors specifically
     if (error.response) {
       const status = error.response.status;
