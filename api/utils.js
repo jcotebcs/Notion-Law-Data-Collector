@@ -86,3 +86,47 @@ export function sendSuccess(res, data, statusCode = 200) {
     data
   });
 }
+
+/**
+ * Safe Notion API request handler that manages data source logic for 2025-09-03 API
+ * @param {Object} notion - Notion client instance
+ * @param {string} method - HTTP method ('get', 'post', 'put', 'delete')
+ * @param {string} endpoint - API endpoint (e.g., '/databases/{id}/query')
+ * @param {Object} data - Request data for POST/PUT requests
+ * @returns {Promise<Object>} - Axios response object
+ */
+export async function safeNotionRequest(notion, method, endpoint, data = null) {
+  // Check if this is a database query operation that needs data source handling
+  const isDatabaseQuery = endpoint.includes('/databases/') && endpoint.includes('/query');
+  
+  if (isDatabaseQuery) {
+    // Extract database ID from endpoint
+    const dbIdMatch = endpoint.match(/\/databases\/([^\/]+)\/query/);
+    if (!dbIdMatch) {
+      throw new Error('Invalid database query endpoint format');
+    }
+    
+    const databaseId = dbIdMatch[1];
+    
+    // First, fetch the database to get data_source_id (required for 2025-09-03 API)
+    const dbResponse = await notion.get(`/databases/${databaseId}`);
+    const data_sources = dbResponse.data.data_sources;
+    
+    if (!data_sources || data_sources.length === 0) {
+      throw new Error('Database has no data sources available');
+    }
+    
+    // Use the first data source for querying
+    const data_source_id = data_sources[0].id;
+    
+    // Query the data source instead of the database directly
+    return await notion[method](`/data_sources/${data_source_id}/query`, data);
+  }
+  
+  // For non-database-query operations, make the request directly
+  if (data !== null) {
+    return await notion[method](endpoint, data);
+  } else {
+    return await notion[method](endpoint);
+  }
+}
