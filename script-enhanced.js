@@ -244,7 +244,22 @@ class NotionLawCollector {
         const response = await fetch(url, requestOptions);
         
         if (!response.ok) {
+            // Check if response is HTML (common for 404 pages)
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('text/html')) {
+                throw new Error(`Backend not available: HTTP ${response.status}. The serverless backend may not be deployed or configured properly.`);
+            }
             throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        // Check if response is JSON before parsing
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            const text = await response.text();
+            if (text.includes('<!DOCTYPE') || text.includes('<html>')) {
+                throw new Error('Unexpected token \'<\', "<!DOCTYPE "... is not valid JSON. The server returned HTML instead of JSON, likely because the backend API is not available.');
+            }
+            throw new Error(`Expected JSON response but received: ${contentType}`);
         }
 
         return await response.json();
@@ -256,7 +271,7 @@ class NotionLawCollector {
     async invokeLambdaDirectly(endpoint, method, body, params) {
         // This requires AWS SDK to be loaded and configured
         if (typeof AWS === 'undefined') {
-            throw new Error('AWS SDK not loaded. Please include AWS SDK or configure API Gateway.');
+            throw new Error('Backend not available: AWS SDK not loaded. For GitHub Pages deployment, you need to either deploy the serverless backend (Vercel/Railway) or configure AWS Lambda with API Gateway. Please see the deployment guide for instructions.');
         }
 
         const lambda = new AWS.Lambda({
@@ -379,10 +394,29 @@ class NotionLawCollector {
                 <p><strong>Cause:</strong> The server returned HTML instead of JSON data.</p>
                 <h5>Possible Solutions:</h5>
                 <ul>
+                    <li><strong>Backend Not Deployed:</strong> The serverless backend (Vercel/Lambda) is not deployed or accessible</li>
+                    <li><strong>Wrong URL:</strong> You may be accessing the app via file:// or wrong domain</li>
+                    <li><strong>API Endpoints Missing:</strong> The /api/* endpoints are not available on this hosting platform</li>
                     <li><strong>CORS Issue:</strong> Use the serverless backend instead of direct browser calls</li>
-                    <li><strong>Wrong Endpoint:</strong> Verify you're using the correct API URL</li>
-                    <li><strong>Authentication:</strong> Check your Notion API token and integration permissions</li>
-                    <li><strong>Network:</strong> Check if you can access the API from your network</li>
+                    <li><strong>Network Issue:</strong> Check if you can access the API from your network</li>
+                </ul>
+                <h5>Recommended Actions:</h5>
+                <ul>
+                    <li>Deploy the app using <strong>Vercel</strong>, <strong>Railway</strong>, or <strong>AWS Lambda</strong></li>
+                    <li>Ensure you're accessing the app via HTTPS, not file://</li>
+                    <li>Check the deployment logs for any errors</li>
+                </ul>
+            `;
+        } else if (errorMessage.includes('backend not available')) {
+            analysis = `
+                <h4>🔍 Error Analysis: Backend Not Available</h4>
+                <p><strong>Cause:</strong> The serverless backend is not deployed or accessible.</p>
+                <h5>Solutions:</h5>
+                <ul>
+                    <li><strong>Deploy Backend:</strong> Deploy the app to Vercel, Railway, or AWS Lambda</li>
+                    <li><strong>Check URL:</strong> Ensure you're accessing the deployed app, not local files</li>
+                    <li><strong>Verify Deployment:</strong> Check deployment status and logs</li>
+                    <li><strong>Environment Variables:</strong> Ensure NOTION_API_KEY is configured in deployment</li>
                 </ul>
             `;
         } else if (errorMessage.includes('cors')) {
@@ -586,11 +620,11 @@ class NotionLawCollector {
 
         let html = '<h3>📋 Recent Cases</h3>';
         
-        cases.forEach(case => {
-            const title = this.extractPropertyValue(case.properties, 'Title') || 'Untitled Case';
-            const caseNumber = this.extractPropertyValue(case.properties, 'Case Number') || 'N/A';
-            const status = this.extractPropertyValue(case.properties, 'Status') || 'Unknown';
-            const createdDate = new Date(case.created_time).toLocaleDateString();
+        cases.forEach(caseItem => {
+            const title = this.extractPropertyValue(caseItem.properties, 'Title') || 'Untitled Case';
+            const caseNumber = this.extractPropertyValue(caseItem.properties, 'Case Number') || 'N/A';
+            const status = this.extractPropertyValue(caseItem.properties, 'Status') || 'Unknown';
+            const createdDate = new Date(caseItem.created_time).toLocaleDateString();
 
             html += `
                 <div class="case-item">
@@ -598,7 +632,7 @@ class NotionLawCollector {
                     <p><strong>Case Number:</strong> ${caseNumber}</p>
                     <p><strong>Status:</strong> <span class="status-badge status-${status.toLowerCase()}">${status}</span></p>
                     <p><strong>Created:</strong> ${createdDate}</p>
-                    <a href="${case.url}" target="_blank" class="btn btn-secondary">View in Notion</a>
+                    <a href="${caseItem.url}" target="_blank" class="btn btn-secondary">View in Notion</a>
                 </div>
             `;
         });
