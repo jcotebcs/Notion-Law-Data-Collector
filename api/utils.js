@@ -57,8 +57,8 @@ export function createNotionClient() {
         
         // Check if response is HTML (common issue mentioned in problem statement)
         if (typeof error.response.data === 'string' && 
-            error.response.data.includes('<!DOCTYPE html>') || 
-            error.response.data.includes('<html>')) {
+            (error.response.data.includes('<!DOCTYPE html>') || 
+            error.response.data.includes('<html>'))) {
           console.error('⚠️  Received HTML response instead of JSON - this indicates an API gateway or proxy error');
           error.isHtmlResponse = true;
         }
