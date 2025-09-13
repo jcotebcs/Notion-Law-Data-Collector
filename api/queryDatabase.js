@@ -40,35 +40,39 @@ export default async function handler(req, res) {
       ...(req.body.start_cursor && { start_cursor: req.body.start_cursor })
     };
 
-    // Create Notion client
+    // Create Notion client and make request using safe handler
     const notion = createNotionClient();
-    // First, fetch the database to get data_source_id (required for 2025-09-03 API)
-    let dbResponse;
+    
+    // Try the standard database query first, fallback to data_sources if needed
+    let response;
     try {
-      dbResponse = await notion.get(`/databases/${databaseId}`);
-    } catch (err) {
-      if (err.response && err.response.status === 404) {
-        return sendError(res, new Error('Database not found or integration lacks access'), 404);
-      } else if (err.response && err.response.status === 401) {
-        return sendError(res, new Error('Invalid Notion API key'), 401);
+      response = await safeNotionRequest(notion, 'post', `/databases/${databaseId}/query`, queryData);
+    } catch (error) {
+      // If we get a 400 error, it might be due to API version changes
+      // Try using the data_sources approach for 2025-09-03 API compatibility
+      if (error.response && error.response.status === 400) {
+        try {
+          console.log('Standard query failed, trying data_sources approach...');
+          
+          // First, fetch the database to get data_source_id
+          const dbResponse = await safeNotionRequest(notion, 'get', `/databases/${databaseId}`);
+          const data_sources = dbResponse.data.data_sources;
+          
+          if (!data_sources || data_sources.length === 0) {
+            return sendError(res, new Error('Database has no data sources available'), 400);
+          }
+          
+          // Use the first data source for querying
+          const data_source_id = data_sources[0].id;
+          response = await safeNotionRequest(notion, 'post', `/data_sources/${data_source_id}/query`, queryData);
+        } catch (fallbackError) {
+          // If fallback also fails, throw the original error
+          throw error;
+        }
       } else {
-        return sendError(res, err, err.response?.status || 500);
+        throw error;
       }
     }
-
-    // Validate dbResponse and its data_sources
-    if (!dbResponse.data || !dbResponse.data.data_sources) {
-      return sendError(res, new Error('Failed to fetch database data sources'), 500);
-    }
-    const data_sources = dbResponse.data.data_sources;
-    if (!data_sources || data_sources.length === 0) {
-      return sendError(res, new Error('Database has no data sources available'), 400);
-    }
-
-    // Use the first data source for querying
-    const data_source_id = data_sources[0].id;
-    // Query the data source instead of the database directly
-    const response = await notion.post(`/data_sources/${data_source_id}/query`, queryData);
     sendSuccess(res, {
       results: response.data.results,
       next_cursor: response.data.next_cursor,
