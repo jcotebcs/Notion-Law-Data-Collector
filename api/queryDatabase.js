@@ -50,11 +50,13 @@ export default async function handler(req, res) {
       if (err.response && err.response.status === 404) {
         return sendError(res, new Error('Database not found or integration lacks access'), 404);
       } else if (err.response && err.response.status === 401) {
-    // Query the data source instead of the database directly
-    const response = await safeNotionRequest(() =>
-      notion.post(`/data_sources/${data_source_id}/query`, queryData)
-    );
-    sendSuccess(res, {
+        return sendError(res, new Error('Invalid Notion API key'), 401);
+      } else {
+        return sendError(res, err, err.response?.status || 500);
+      }
+    }
+
+    // Validate dbResponse and its data_sources
     if (!dbResponse.data || !dbResponse.data.data_sources) {
       return sendError(res, new Error('Failed to fetch database data sources'), 500);
     }
@@ -62,8 +64,7 @@ export default async function handler(req, res) {
     if (!data_sources || data_sources.length === 0) {
       return sendError(res, new Error('Database has no data sources available'), 400);
     }
-      return sendError(res, new Error('Database has no data sources available'), 400);
-    }
+
     // Use the first data source for querying
     const data_source_id = data_sources[0].id;
     // Query the data source instead of the database directly
