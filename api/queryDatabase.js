@@ -40,9 +40,22 @@ export default async function handler(req, res) {
       ...(req.body.start_cursor && { start_cursor: req.body.start_cursor })
     };
 
-    // Create Notion client and make request
+    // Create Notion client
     const notion = createNotionClient();
-    const response = await notion.post(`/databases/${databaseId}/query`, queryData);
+    
+    // First, fetch the database to get data_source_id (required for 2025-09-03 API)
+    const dbResponse = await notion.get(`/databases/${databaseId}`);
+    const data_sources = dbResponse.data.data_sources;
+    
+    if (!data_sources || data_sources.length === 0) {
+      return sendError(res, new Error('Database has no data sources available'), 400);
+    }
+    
+    // Use the first data source for querying
+    const data_source_id = data_sources[0].id;
+    
+    // Query the data source instead of the database directly
+    const response = await notion.post(`/data_sources/${data_source_id}/query`, queryData);
 
     // Return success with query results
     sendSuccess(res, {
