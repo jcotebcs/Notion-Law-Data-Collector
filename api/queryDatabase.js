@@ -40,38 +40,9 @@ export default async function handler(req, res) {
       ...(req.body.start_cursor && { start_cursor: req.body.start_cursor })
     };
 
-    // Create Notion client
+    // Create Notion client and query database directly
     const notion = createNotionClient();
-    // As of Notion API version 2025-09-03, querying databases must be done via data sources.
-    // Previously, queries were sent directly to /databases/{databaseId}/query, but now require
-    // fetching the database's data_sources and using /data_sources/{data_source_id}/query instead.
-    // First, fetch the database to get data_source_id (required for 2025-09-03 API)
-    let dbResponse;
-    try {
-      dbResponse = await safeNotionRequest(notion, 'get', `/databases/${databaseId}`);
-    } catch (err) {
-      if (err.response && err.response.status === 404) {
-        return sendError(res, new Error('Database not found or integration lacks access'), 404);
-      } else if (err.response && err.response.status === 401) {
-        return sendError(res, new Error('Invalid Notion API key'), 401);
-      } else {
-        return sendError(res, err, err.response?.status || 500);
-      }
-    }
-
-    // Validate dbResponse and its data_sources
-    if (!dbResponse.data || !dbResponse.data.data_sources) {
-      return sendError(res, new Error('Failed to fetch database data sources'), 500);
-    }
-    const data_sources = dbResponse.data.data_sources;
-    if (!data_sources || data_sources.length === 0) {
-      return sendError(res, new Error('Database has no data sources available'), 400);
-    }
-
-    // Use the first data source for querying
-    const data_source_id = data_sources[0].id;
-    // Query the data source using safeNotionRequest for consistent error handling
-    const response = await safeNotionRequest(notion, 'post', `/data_sources/${data_source_id}/query`, queryData);
+    const response = await safeNotionRequest(notion, 'post', `/databases/${databaseId}/query`, queryData);
     sendSuccess(res, {
       results: response.data.results,
       next_cursor: response.data.next_cursor,

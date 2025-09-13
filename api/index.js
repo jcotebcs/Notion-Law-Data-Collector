@@ -24,6 +24,15 @@ app.all('/api/testConnection', testConnectionHandler);
 app.all('/api/createPage', createPageHandler);
 app.all('/api/queryDatabase', queryDatabaseHandler);
 
+// API error handler for unmatched routes - return JSON instead of HTML
+app.use('/api/*', (req, res) => {
+  res.status(404).json({
+    error: true,
+    message: `API endpoint ${req.path} not found`,
+    statusCode: 404
+  });
+});
+
 // Serve the static frontend
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'index.html'));
@@ -32,6 +41,21 @@ app.get('/', (req, res) => {
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Global error handler for API routes to ensure JSON responses
+app.use((error, req, res, next) => {
+  // Only handle API routes, let other routes use default error handling
+  if (req.path.startsWith('/api/')) {
+    console.error('API Error:', error);
+    res.status(500).json({
+      error: true,
+      message: error.message || 'Internal server error',
+      statusCode: 500
+    });
+  } else {
+    next(error);
+  }
 });
 
 // Start server (only if not running in serverless environment)
