@@ -21,12 +21,22 @@
         <div class="config-section">
             <h2><i class="fas fa-cog"></i> Configuration</h2>
             <div class="form-group">
+                <label for="repositoryOwner">Repository Owner:</label>
+                <input type="text" id="repositoryOwner" placeholder="github-username">
+                <small>Your GitHub username or organization name</small>
+            </div>
+            <div class="form-group">
+                <label for="repositoryName">Repository Name:</label>
+                <input type="text" id="repositoryName" placeholder="repository-name">
+                <small>The name of this repository</small>
+            </div>
+            <div class="form-group">
                 <label for="databaseId">Database ID:</label>
                 <input type="text" id="databaseId" placeholder="32-character database ID">
-                <small>Copy from your Notion database URL. The Notion API key is configured on the server.</small>
+                <small>Copy from your Notion database URL. The Notion API key is configured in repository secrets.</small>
             </div>
             <button id="testConnection" class="btn btn-secondary">
-                <i class="fas fa-plug"></i> Test Connection
+                <i class="fas fa-plug"></i> Test Configuration
             </button>
             <div id="connectionStatus"></div>
         </div>
@@ -123,27 +133,36 @@
             </form>
         </div>
 
-        <div class="recent-cases-section">
-            <h2><i class="fas fa-history"></i> Recent Cases</h2>
-            <div id="recentCases">
-                <p>Configure your Notion connection to view recent cases.</p>
-            </div>
-            <button id="refreshCases" class="btn btn-secondary" style="display: none;">
-                <i class="fas fa-refresh"></i> Refresh
-            </button>
+        <div class="status-section">
+            <h2><i class="fas fa-info-circle"></i> Processing Status</h2>
+            <p>After submitting case data, you can monitor the processing status by:</p>
+            <ul>
+                <li>Checking the GitHub issue that gets created</li>
+                <li>Viewing the Actions tab in your repository</li>
+                <li>Looking for automatic comments on the issue with results</li>
+            </ul>
+            <p>The GitHub Actions workflow will automatically close the issue once the data is successfully added to Notion.</p>
         </div>
 
         <div class="help-section">
             <h2><i class="fas fa-question-circle"></i> Setup Instructions</h2>
             <div class="help-content">
-                <h3>1. Deploy This Application</h3>
+                <h3>1. Setup Repository Secrets</h3>
                 <ol>
-                    <li>Deploy to <a href="https://vercel.com" target="_blank">Vercel</a>, <a href="https://railway.app" target="_blank">Railway</a>, or <a href="https://render.com" target="_blank">Render</a></li>
-                    <li>Set the <strong>NOTION_API_KEY</strong> environment variable during deployment</li>
+                    <li>Go to your repository Settings > Secrets and variables > Actions</li>
+                    <li>Add <strong>NOTION_TOKEN</strong> with your Notion integration token</li>
+                    <li>Add <strong>NOTION_DATABASE_ID</strong> with your database ID</li>
                     <li>Get your Notion API key from <a href="https://www.notion.so/my-integrations" target="_blank">Notion Integrations</a></li>
                 </ol>
 
-                <h3>2. Create a Database</h3>
+                <h3>2. Create Issue Label</h3>
+                <ol>
+                    <li>Go to your repository Issues > Labels</li>
+                    <li>Create a new label called <strong>legal-entry</strong></li>
+                    <li>This label is required for the GitHub Actions workflow to process submissions</li>
+                </ol>
+
+                <h3>3. Create a Database</h3>
                 <ol>
                     <li>Create a new page in Notion</li>
                     <li>Add a database with these properties:
@@ -166,12 +185,24 @@
                     <li>Copy the database ID from the URL</li>
                 </ol>
 
-                <h3>3. Configure This App</h3>
+                <h3>4. Configure This App</h3>
                 <ol>
-                    <li>Paste your database ID above</li>
-                    <li>Test the connection</li>
+                    <li>Enter your GitHub repository information above</li>
+                    <li>Paste your database ID</li>
+                    <li>Test the configuration</li>
                     <li>Start adding case data!</li>
                 </ol>
+
+                <div class="cost-info">
+                    <h3>💰 Zero-Cost Solution</h3>
+                    <p>This application uses only free GitHub services:</p>
+                    <ul>
+                        <li>✅ GitHub Pages (free hosting)</li>
+                        <li>✅ GitHub Actions (2,000 free minutes/month)</li>
+                        <li>✅ GitHub Issues (unlimited for public repos)</li>
+                        <li>✅ No external services or monthly fees</li>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
@@ -185,6 +216,6 @@
 
     <div id="notification" class="notification"></div>
 
-    <script src="script-enhanced.js"></script>
+    <script src="script-github.js"></script>
 </body>
 </html>

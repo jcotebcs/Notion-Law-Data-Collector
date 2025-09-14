@@ -1,0 +1,40 @@
+name: Process Legal Entry
+
+on:
+  issues:
+    types: [opened]
+  issue_comment:
+    types: [created]
+
+jobs:
+  process-legal-entry:
+    runs-on: ubuntu-latest
+    
+    # Only run if the issue has the 'legal-entry' label
+    if: contains(github.event.issue.labels.*.name, 'legal-entry')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Install dependencies
+        run: |
+          npm ci
+          
+      - name: Process Legal Entry
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          INPUT_ISSUE_NUMBER: ${{ github.event.issue.number }}
+          INPUT_ISSUE_BODY: ${{ github.event.issue.body }}
+          INPUT_ACTION: ${{ github.event.action }}
+          INPUT_COMMENT_BODY: ${{ github.event.comment.body || '' }}
+        run: |
+          node .github/scripts/process-legal-entry.js
