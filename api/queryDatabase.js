@@ -31,7 +31,7 @@ export default async function handler(req, res) {
     const queryData = {
       sorts: req.body.sorts || [
         {
-          timestamp: 'created_time',
+          property: 'created_time',
           direction: 'descending'
         }
       ],
