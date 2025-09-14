@@ -1,4 +1,4 @@
-import { createNotionClient, handlePreflight, sendError, sendSuccess, validateRequired } from './utils.js';
+import { createNotionClient, handlePreflight, sendError, sendSuccess, validateRequired, safeNotionRequest } from './utils.js';
 
 /**
  * Test connection to Notion database
@@ -29,7 +29,23 @@ export default async function handler(req, res) {
 
     // Create Notion client and make request
     const notion = createNotionClient();
-    const response = await notion.get(`/databases/${databaseId}`);
+    let response;
+    try {
+      response = await safeNotionRequest(notion, 'get', `/databases/${databaseId}`);
+    } catch (err) {
+      // Handle HTML responses (API gateway/proxy errors)
+      if (err.isHtmlResponse) {
+        return sendError(res, new Error('Received HTML error page instead of JSON response. This may indicate API gateway issues or incorrect endpoint configuration.'), 502);
+      }
+      
+      if (err.response && err.response.status === 404) {
+        return sendError(res, new Error('Database not found or integration lacks access'), 404);
+      } else if (err.response && err.response.status === 401) {
+        return sendError(res, new Error('Invalid Notion API key'), 401);
+      } else {
+        return sendError(res, err, err.response?.status || 500);
+      }
+    }
 
     // Check if database has data sources (required for 2025-09-03 API)
     const data_sources = response.data.data_sources;

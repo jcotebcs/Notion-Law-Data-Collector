@@ -86,3 +86,49 @@ export function sendSuccess(res, data, statusCode = 200) {
     data
   });
 }
+
+/**
+ * Safe wrapper for Notion API requests with enhanced error handling
+ * Handles HTML responses and provides consistent error formatting
+ */
+export async function safeNotionRequest(notionClient, method, endpoint, data = null) {
+  try {
+    let response;
+    
+    switch (method.toLowerCase()) {
+      case 'get':
+        response = await notionClient.get(endpoint);
+        break;
+      case 'post':
+        response = await notionClient.post(endpoint, data);
+        break;
+      case 'put':
+        response = await notionClient.put(endpoint, data);
+        break;
+      case 'delete':
+        response = await notionClient.delete(endpoint);
+        break;
+      default:
+        throw new Error(`Unsupported HTTP method: ${method}`);
+    }
+    
+    return response;
+    
+  } catch (error) {
+    // Check if the response is HTML instead of JSON
+    if (error.response && error.response.data) {
+      const responseData = error.response.data;
+      
+      // Detect HTML responses (API gateway/proxy errors)
+      if (typeof responseData === 'string' && responseData.includes('<!DOCTYPE')) {
+        const htmlError = new Error('Received HTML error page instead of JSON response. This may indicate API gateway issues or incorrect endpoint configuration.');
+        htmlError.isHtmlResponse = true;
+        htmlError.response = error.response;
+        throw htmlError;
+      }
+    }
+    
+    // Re-throw the original error for normal API error handling
+    throw error;
+  }
+}
