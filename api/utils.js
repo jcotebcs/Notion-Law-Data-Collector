@@ -18,8 +18,8 @@ export function validateNotionConfig() {
  * Checks if response content appears to be HTML instead of JSON
  */
 export function isHtmlResponse(data, headers) {
-  // Check content-type header first
-  const contentType = headers?.['content-type'] || '';
+  // Check content-type header first (case-insensitive)
+  const contentType = headers?.['content-type'] || headers?.['Content-Type'] || '';
   if (contentType.toLowerCase().includes('text/html')) {
     return true;
   }
