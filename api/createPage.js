@@ -1,4 +1,4 @@
-import { createNotionClient, handlePreflight, sendError, sendSuccess, validateRequired } from './utils.js';
+import { createNotionClient, handlePreflight, sendError, sendSuccess, validateRequired, safeNotionRequest } from './utils.js';
 
 /**
  * Create a new page in Notion database
@@ -36,9 +36,29 @@ export default async function handler(req, res) {
     const notion = createNotionClient();
     
     // First, fetch the database to get data_source_id (required for 2025-09-03 API)
-    const dbResponse = await notion.get(`/databases/${databaseId}`);
+    let dbResponse;
+    try {
+      dbResponse = await safeNotionRequest(notion, 'get', `/databases/${databaseId}`);
+    } catch (err) {
+      // Handle HTML responses (API gateway/proxy errors)
+      if (err.isHtmlResponse) {
+        return sendError(res, new Error('Received HTML error page instead of JSON response. This may indicate API gateway issues or incorrect endpoint configuration.'), 502);
+      }
+      
+      if (err.response && err.response.status === 404) {
+        return sendError(res, new Error('Database not found or integration lacks access'), 404);
+      } else if (err.response && err.response.status === 401) {
+        return sendError(res, new Error('Invalid Notion API key'), 401);
+      } else {
+        return sendError(res, err, err.response?.status || 500);
+      }
+    }
+
+    // Validate dbResponse and its data_sources
+    if (!dbResponse.data || !dbResponse.data.data_sources) {
+      return sendError(res, new Error('Failed to fetch database data sources'), 500);
+    }
     const data_sources = dbResponse.data.data_sources;
-    
     if (!data_sources || data_sources.length === 0) {
       return sendError(res, new Error('Database has no data sources available'), 400);
     }
@@ -54,7 +74,7 @@ export default async function handler(req, res) {
       properties: properties
     };
 
-    const response = await notion.post('/pages', pageData);
+    const response = await safeNotionRequest(notion, 'post', '/pages', pageData);
 
     // Return success with created page info
     sendSuccess(res, {
