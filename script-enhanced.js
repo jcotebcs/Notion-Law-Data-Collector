@@ -586,11 +586,11 @@ class NotionLawCollector {
 
         let html = '<h3>📋 Recent Cases</h3>';
         
-        cases.forEach(case => {
-            const title = this.extractPropertyValue(case.properties, 'Title') || 'Untitled Case';
-            const caseNumber = this.extractPropertyValue(case.properties, 'Case Number') || 'N/A';
-            const status = this.extractPropertyValue(case.properties, 'Status') || 'Unknown';
-            const createdDate = new Date(case.created_time).toLocaleDateString();
+        cases.forEach(caseItem => {
+            const title = this.extractPropertyValue(caseItem.properties, 'Title') || 'Untitled Case';
+            const caseNumber = this.extractPropertyValue(caseItem.properties, 'Case Number') || 'N/A';
+            const status = this.extractPropertyValue(caseItem.properties, 'Status') || 'Unknown';
+            const createdDate = new Date(caseItem.created_time).toLocaleDateString();
 
             html += `
                 <div class="case-item">
@@ -598,7 +598,7 @@ class NotionLawCollector {
                     <p><strong>Case Number:</strong> ${caseNumber}</p>
                     <p><strong>Status:</strong> <span class="status-badge status-${status.toLowerCase()}">${status}</span></p>
                     <p><strong>Created:</strong> ${createdDate}</p>
-                    <a href="${case.url}" target="_blank" class="btn btn-secondary">View in Notion</a>
+                    <a href="${caseItem.url}" target="_blank" class="btn btn-secondary">View in Notion</a>
                 </div>
             `;
         });
