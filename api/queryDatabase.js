@@ -67,20 +67,41 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
+    console.error('Query Database Error:', {
+      message: error.message,
+      status: error.response?.status,
+      isHtmlResponse: error.isHtmlResponse,
+      headers: error.response?.headers?.['content-type']
+    });
+    
+    // Handle HTML responses specifically
+    if (error.isHtmlResponse) {
+      return sendError(res, error, error.response?.status || 500);
+    }
+    
     // Handle Notion API errors specifically
     if (error.response) {
       const status = error.response.status;
       const notionError = error.response.data;
       
       if (status === 401) {
-        return sendError(res, new Error('Invalid Notion API key'), 401);
+        return sendError(res, new Error('Invalid Notion API key or insufficient permissions'), 401);
       } else if (status === 404) {
         return sendError(res, new Error('Database not found or integration lacks access'), 404);
       } else if (status === 400) {
-        return sendError(res, new Error(notionError.message || 'Invalid query parameters'), 400);
+        return sendError(res, new Error(notionError?.message || 'Invalid query parameters'), 400);
+      } else if (status >= 500) {
+        return sendError(res, new Error('Notion API server error - please try again later'), status);
       } else {
-        return sendError(res, new Error(notionError.message || 'Notion API error'), status);
+        return sendError(res, new Error(notionError?.message || 'Notion API error'), status);
       }
+    }
+    
+    // Handle network and other errors
+    if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+      return sendError(res, new Error('Request timeout - Notion API is not responding'), 408);
+    } else if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+      return sendError(res, new Error('Cannot connect to Notion API - please check your internet connection'), 503);
     }
     
     // Handle other errors

@@ -15,20 +15,103 @@ export function validateNotionConfig() {
 }
 
 /**
+ * Checks if response content appears to be HTML instead of JSON
+ */
+export function isHtmlResponse(data, headers) {
+  // Check content-type header first
+  const contentType = headers?.['content-type'] || '';
+  if (contentType.toLowerCase().includes('text/html')) {
+    return true;
+  }
+  
+  // Check if response data contains HTML tags
+  if (typeof data === 'string') {
+    const htmlIndicators = ['<html', '<head', '<body', '<!doctype', '<!DOCTYPE'];
+    const lowerData = data.toLowerCase();
+    return htmlIndicators.some(indicator => lowerData.includes(indicator));
+  }
+  
+  return false;
+}
+
+/**
+ * Creates helpful error message when HTML is received instead of JSON
+ */
+export function createHtmlErrorMessage(data, status) {
+  let message = 'Notion API returned HTML instead of JSON';
+  
+  if (status === 401) {
+    message += ' - this usually indicates an authentication error. Please verify your Notion API key is correct.';
+  } else if (status === 404) {
+    message += ' - this usually indicates an incorrect endpoint or the resource was not found.';
+  } else if (status >= 500) {
+    message += ' - this indicates a server error on Notion\'s side.';
+  }
+  
+  // Try to extract title from HTML for additional context
+  if (typeof data === 'string') {
+    const titleMatch = data.match(/<title[^>]*>([^<]+)<\/title>/i);
+    if (titleMatch && titleMatch[1]) {
+      message += ` Server response: "${titleMatch[1].trim()}"`;
+    }
+  }
+  
+  return message;
+}
+
+/**
  * Creates axios instance configured for Notion API
  */
 export function createNotionClient() {
   validateNotionConfig();
   
-  return axios.create({
+  const client = axios.create({
     baseURL: NOTION_BASE_URL,
     headers: {
       'Authorization': `Bearer ${NOTION_API_KEY}`,
       'Notion-Version': NOTION_VERSION,
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Accept': 'application/json' // Explicitly request JSON
     },
-    timeout: 30000 // 30 second timeout
+    timeout: 30000, // 30 second timeout
+    validateStatus: function (status) {
+      // Don't throw for any status code, we'll handle errors ourselves
+      return true;
+    }
   });
+  
+  // Add response interceptor to handle HTML responses
+  client.interceptors.response.use(
+    (response) => {
+      // Check if we received HTML when expecting JSON
+      if (isHtmlResponse(response.data, response.headers)) {
+        const error = new Error(createHtmlErrorMessage(response.data, response.status));
+        error.response = response;
+        error.isHtmlResponse = true;
+        throw error;
+      }
+      
+      // For successful responses, ensure we have JSON
+      if (response.status >= 200 && response.status < 300) {
+        return response;
+      }
+      
+      // For error responses, throw an error
+      const error = new Error(`HTTP ${response.status}: ${response.statusText}`);
+      error.response = response;
+      throw error;
+    },
+    (error) => {
+      // Handle network errors and other axios errors
+      if (error.response && isHtmlResponse(error.response.data, error.response.headers)) {
+        error.message = createHtmlErrorMessage(error.response.data, error.response.status);
+        error.isHtmlResponse = true;
+      }
+      throw error;
+    }
+  );
+  
+  return client;
 }
 
 /**
