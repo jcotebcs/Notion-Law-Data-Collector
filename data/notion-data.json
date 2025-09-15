@@ -1,0 +1,16 @@
+{
+  "lastUpdated": "2024-01-01T00:00:00.000Z",
+  "databaseInfo": {
+    "id": "placeholder",
+    "title": "Notion Law Database",
+    "url": "",
+    "total_entries": 0
+  },
+  "entries": [],
+  "metadata": {
+    "version": "1.0",
+    "source": "placeholder",
+    "fetchedAt": "2024-01-01T00:00:00.000Z",
+    "note": "This is a placeholder file. Real data will be populated by GitHub Actions workflow when NOTION_TOKEN and NOTION_DATABASE_ID secrets are configured."
+  }
+}
