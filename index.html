@@ -217,6 +217,39 @@
             font-family: monospace;
             font-size: 13px;
         }
+
+        .search-result-card {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            background: #f9f9f9;
+            transition: box-shadow 0.2s ease;
+        }
+
+        .search-result-card:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-result-card h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+
+        .result-meta {
+            color: #666;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+
+        .result-meta a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .result-meta a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -247,6 +280,27 @@
                     2. GitHub Actions workflow fetches data every 30 minutes<br>
                     3. Data is stored as static JSON files served by GitHub Pages
                 </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">🔍 CourtListener Search</h2>
+            <div id="searchAlert" class="alert"></div>
+            
+            <div class="form-group">
+                <label for="searchQuery">Search Case Law</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="searchQuery" placeholder="Enter case name, citation, or keywords..." style="flex: 1;">
+                    <button type="button" class="btn btn-test" onclick="searchCourtListener()" style="white-space: nowrap;">
+                        Search
+                        <div class="spinner" id="searchSpinner"></div>
+                    </button>
+                </div>
+            </div>
+            
+            <div id="searchResults" style="display: none;">
+                <h3 class="section-title">📋 Search Results</h3>
+                <div id="resultsList"></div>
             </div>
         </div>
 
@@ -473,6 +527,106 @@
                     </div>
                 </div>
             `).join('');
+        }
+
+        async function searchCourtListener() {
+            const query = document.getElementById('searchQuery').value.trim();
+            const spinner = document.getElementById('searchSpinner');
+            const resultsContainer = document.getElementById('searchResults');
+            const resultsList = document.getElementById('resultsList');
+            
+            if (!query) {
+                showAlert('searchAlert', 'error', '❌ Please enter a search query');
+                return;
+            }
+            
+            spinner.classList.add('show');
+            showAlert('searchAlert', 'warning', '🔄 Searching CourtListener...');
+            resultsContainer.style.display = 'none';
+            
+            try {
+                // Since we can't directly call CourtListener API from browser due to CORS,
+                // we'll use the data that was already fetched by GitHub Actions
+                if (notionData && notionData.entries) {
+                    // Search through existing CourtListener data in our Notion entries
+                    const searchResults = [];
+                    
+                    notionData.entries.forEach(entry => {
+                        if (entry.courtlistener_search && entry.courtlistener_search.results) {
+                            const matchingResults = entry.courtlistener_search.results.filter(result =>
+                                result.case_name.toLowerCase().includes(query.toLowerCase()) ||
+                                (result.docket_number && result.docket_number.toLowerCase().includes(query.toLowerCase())) ||
+                                (result.court && result.court.toLowerCase().includes(query.toLowerCase()))
+                            );
+                            searchResults.push(...matchingResults);
+                        }
+                    });
+                    
+                    if (searchResults.length > 0) {
+                        displaySearchResults(searchResults, query);
+                        showAlert('searchAlert', 'success', `✅ Found ${searchResults.length} results from cached CourtListener data`);
+                    } else {
+                        showAlert('searchAlert', 'warning', '🔍 No matches found in cached CourtListener data. Note: This searches data already fetched from CourtListener via GitHub Actions.');
+                        resultsContainer.style.display = 'none';
+                    }
+                } else {
+                    showAlert('searchAlert', 'error', '❌ No data available. Please wait for data to load.');
+                }
+            } catch (error) {
+                console.error('Search error:', error);
+                showAlert('searchAlert', 'error', `❌ Search failed: ${error.message}`);
+            } finally {
+                spinner.classList.remove('show');
+            }
+        }
+        
+        function displaySearchResults(results, query) {
+            const resultsContainer = document.getElementById('searchResults');
+            const resultsList = document.getElementById('resultsList');
+            
+            resultsList.innerHTML = results.map(result => `
+                <div class="search-result-card" style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 8px; background: #f9f9f9;">
+                    <h4 style="margin: 0 0 10px 0; color: #333;">${result.case_name || 'Unknown Case'}</h4>
+                    <div class="result-meta" style="color: #666; font-size: 0.9em;">
+                        ${result.court ? `<strong>Court:</strong> ${result.court}<br>` : ''}
+                        ${result.date_filed ? `<strong>Date Filed:</strong> ${result.date_filed}<br>` : ''}
+                        ${result.docket_number ? `<strong>Docket:</strong> ${result.docket_number}<br>` : ''}
+                        ${result.url ? `<strong>URL:</strong> <a href="${result.url}" target="_blank" style="color: #007bff;">View on CourtListener</a><br>` : ''}
+                    </div>
+                    <button onclick="fillFormFromResult(${JSON.stringify(result).replace(/"/g, '&quot;')})" 
+                            class="btn" style="margin-top: 10px; font-size: 0.9em; padding: 8px 16px;">
+                        Use This Case Data
+                    </button>
+                </div>
+            `).join('');
+            
+            resultsContainer.style.display = 'block';
+        }
+        
+        function fillFormFromResult(result) {
+            // Fill the form with data from the selected CourtListener result
+            if (result.case_name) {
+                document.getElementById('caseName').value = result.case_name;
+            }
+            if (result.date_filed) {
+                document.getElementById('caseDate').value = result.date_filed;
+            }
+            if (result.court) {
+                document.getElementById('court').value = result.court;
+            }
+            if (result.docket_number) {
+                const notesField = document.getElementById('notes');
+                const currentNotes = notesField.value;
+                const docketInfo = `Docket Number: ${result.docket_number}`;
+                const urlInfo = result.url ? `\nCourtListener URL: ${result.url}` : '';
+                notesField.value = currentNotes ? `${currentNotes}\n\n${docketInfo}${urlInfo}` : `${docketInfo}${urlInfo}`;
+            }
+            
+            // Scroll to the form
+            document.getElementById('caseForm').scrollIntoView({ behavior: 'smooth' });
+            
+            // Show success message
+            showAlert('formAlert', 'success', '✅ Form populated with CourtListener data! You can now edit and save.');
         }
 
         console.log('🚀 GitHub Pages Notion Collector loaded!');

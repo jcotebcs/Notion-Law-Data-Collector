@@ -12,6 +12,7 @@ A GitHub Actions-powered application for collecting and organizing legal case da
 - 📊 **Real-time Data**: View your latest Notion database entries
 - 🎯 **Zero Client Dependencies**: Pure HTML, CSS, and JavaScript solution
 - 🔒 **Secure**: API credentials stored as GitHub repository secrets
+- 🔍 **CourtListener Integration**: Automatically search case law and populate forms with real court data
 
 ## Quick Start
 
@@ -72,6 +73,17 @@ The application uses a GitHub Actions workflow (`.github/workflows/fetch-notion-
    40c4cef5c8cd4cb4891a35c3710df6e9
    ```
 
+   **COURT_LISTENER_API_KEY** (Optional): Your CourtListener API token for case law searches
+   ```
+   your_courtlistener_api_token
+   ```
+   
+   📍 **To get a CourtListener API key:**
+   1. Create an account at [CourtListener.com](https://www.courtlistener.com)
+   2. Go to your [API settings](https://www.courtlistener.com/api/rest-info/)
+   3. Generate an API token
+   4. Add it as a repository secret
+
 ### 5. Enable GitHub Actions and Pages
 
 1. Go to the **Actions** tab and enable workflows if prompted
@@ -115,6 +127,33 @@ The application supports these case data fields from your Notion database:
 ├── notion-data.json    # Complete database entries with metadata
 └── summary.json        # Summary information and status
 ```
+
+## CourtListener Integration
+
+The application now includes powerful integration with [CourtListener](https://www.courtlistener.com), the largest open legal database in the world.
+
+### Features
+
+- **Automatic Case Law Search**: For each case in your Notion database, the system automatically searches CourtListener for related court documents
+- **Rich Metadata**: Retrieves case names, filing dates, court information, docket numbers, and direct links to court documents
+- **Interactive Search**: Use the built-in search interface to find cases and automatically populate your form
+- **Smart Matching**: Results are intelligently filtered and matched to your search queries
+
+### How It Works
+
+1. **Data Enrichment**: When GitHub Actions runs, it automatically searches CourtListener for each case in your Notion database
+2. **Cached Results**: CourtListener data is cached in your JSON files for fast searching
+3. **Form Population**: Click "Use This Case Data" on any search result to automatically fill your form with court data
+4. **Real Court Data**: Access verified information from actual court filings and decisions
+
+### APIs Used
+
+The integration leverages multiple CourtListener API endpoints:
+- **Case Law API** (`/api/rest/v3/search/`): Search opinions and court decisions
+- **PACER Integration**: Access to federal court documents
+- **Oral Arguments**: Links to court proceeding recordings
+- **Judge Information**: Details about presiding judges
+- **Financial Disclosures**: Judicial financial transparency data
 
 ## Why This Approach?
 
