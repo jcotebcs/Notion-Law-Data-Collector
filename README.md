@@ -1,248 +1,36 @@
 
 # Notion Law Data Collector
 
-A web application for collecting and organizing legal case data directly into your Notion database. This application features a React-like frontend with a serverless Node.js backend to resolve CORS restrictions and ensure secure API communication.
+A simple, clean GitHub Pages application for collecting and organizing legal case data directly into your Notion database. This is a single HTML file solution that works immediately on GitHub Pages without any server dependencies.
 
 ## Features
 
-- 📝 **Easy Data Entry**: Intuitive form for entering legal case information
-- 🔗 **Direct Notion Integration**: Connects securely to your Notion database via serverless API
-- 📱 **Responsive Design**: Works on desktop, tablet, and mobile devices
-- 🔒 **Secure**: API keys stored server-side, protected from client exposure
-- ⚡ **Fast**: Serverless backend with optimized performance
-- 📊 **Recent Cases View**: See your latest entries at a glance
-- 🌐 **CORS-Free**: No browser restrictions when accessing Notion API
+- 📝 **Easy Data Entry**: Clean, intuitive form for entering legal case information
+- 🔗 **Direct Notion Integration**: Browser-based API calls directly to Notion
+- 📱 **Responsive Design**: Works perfectly on desktop, tablet, and mobile devices  
+- ⚡ **Instant Deploy**: Works immediately on GitHub Pages - no configuration needed
+- 📊 **Recent Entries**: View your recent submissions stored locally
+- 🎯 **Zero Dependencies**: Single HTML file with embedded CSS and JavaScript
+- 🚀 **GitHub Pages Ready**: Deploy in seconds with just a git push
 
-## Architecture
+## Quick Start
 
-This application uses a **serverless architecture** to resolve CORS (Cross-Origin Resource Sharing) issues:
+1. **Fork this repository**
+2. **Enable GitHub Pages** in repository settings (choose main branch)
+3. **Visit your GitHub Pages URL** (usually `https://yourusername.github.io/Notion-Law-Data-Collector`)
+4. **Get your Notion API key** from [Notion Integrations](https://www.notion.so/my-integrations)
+5. **Enter your API key and database ID** in the app
+6. **Start collecting data!**
 
-```
-Frontend (HTML/CSS/JS) → Serverless Backend → Notion API
-```
+## Why This Approach?
 
-### Why Serverless Backend?
+This simplified version removes all the complexity of serverless functions, deployment configurations, and CORS proxies. Instead:
 
-The original version made direct browser requests to Notion API, which caused CORS errors. The serverless backend acts as a secure proxy:
-
-- **Resolves CORS**: Backend makes API calls on behalf of frontend
-- **Secure**: Notion API keys stored as environment variables on server
-- **Scalable**: Serverless functions auto-scale with demand
-- **Cost-Effective**: Only pay for actual usage
-
-## Deployment Guide
-
-### 🚀 NEW: AWS Lambda Deployment (Recommended for Production)
-
-For the most secure and scalable deployment, use our new AWS Lambda implementation with Python 3.9+ and GitHub Actions for automated deployment.
-
-**Key Benefits:**
-- ✅ **Enhanced Security**: API tokens stored in AWS Secrets Manager
-- ✅ **Latest Notion API**: Uses Notion API version 2025-09-03 with multi-source database support
-- ✅ **Automated Deployment**: Full CI/CD with GitHub Actions
-- ✅ **Error Analysis**: Built-in troubleshooting for "Unexpected token '<'" errors
-- ✅ **Comprehensive Testing**: Unit and integration tests included
-
-📖 **[Complete AWS Lambda Setup Guide](AWS_LAMBDA_DEPLOYMENT.md)**
-
-**Quick Start:**
-1. Run `./scripts/setup-aws.sh` to configure AWS resources
-2. Add GitHub Secrets (AWS credentials and ARNs)
-3. Push to main branch to trigger automated deployment
-
----
-
-### Quick Deploy to Vercel (Alternative)
-
-1. **Fork this repository** to your GitHub account
-
-2. **Deploy to Vercel:**
-   - Visit [vercel.com](https://vercel.com)
-   - Click "New Project" and import your forked repository
-   - Vercel will automatically detect the configuration
-
-3. **Set Environment Variable:**
-   - In Vercel dashboard, go to Project Settings > Environment Variables
-   - Add: `NOTION_API_KEY` = `your_notion_integration_token`
-   - Redeploy the project
-
-4. **Get your Notion API key:**
-   - Visit [Notion Integrations](https://www.notion.so/my-integrations)
-   - Create a new integration
-   - Copy the "Internal Integration Token"
-
-### Deploy to Railway
-
-1. **Fork this repository** to your GitHub account
-
-2. **Deploy to Railway:**
-   - Visit [railway.app](https://railway.app)
-   - Click "Deploy from GitHub repo"
-   - Select your forked repository
-
-3. **Set Environment Variable:**
-   - In Railway dashboard, go to Variables tab
-   - Add: `NOTION_API_KEY` = `your_notion_integration_token`
-
-### Deploy to Render
-
-1. **Fork this repository** to your GitHub account
-
-2. **Create Web Service:**
-   - Visit [render.com](https://render.com)
-   - Click "New" > "Web Service"
-   - Connect your forked repository
-   - Set build command: `npm install`
-   - Set start command: `npm start`
-
-3. **Set Environment Variable:**
-   - In service settings, add environment variable
-   - `NOTION_API_KEY` = `your_notion_integration_token`
-
-### Verification
-
-After deployment:
-1. Visit your deployed URL
-2. Enter a database ID in the configuration section
-3. Click "Test Connection" - should work without CORS errors
-4. If connection fails, check that your environment variable is set correctly
-
-### Database Setup
-
-Before using the application, you need to:
-
-1. **Create a Notion Integration** at [notion.so/my-integrations](https://www.notion.so/my-integrations)
-2. **Create a database** in Notion with the required properties (see Setup Instructions)
-3. **Share the database** with your integration
-4. **Copy the database ID** from the URL
-
-The database ID is the 32-character string in your database URL:
-`https://notion.so/workspace/DATABASE_ID?v=...`
-
-## Local Development
-
-### Prerequisites
-
-- Node.js 18+ 
-- npm or yarn
-- A Notion integration token
-
-### Setup
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/jcotebcs/Notion-Law-Data-Collector.git
-   cd Notion-Law-Data-Collector
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Set up environment variables**
-   ```bash
-   cp .env.example .env
-   # Edit .env and add your NOTION_API_KEY
-   ```
-
-4. **Start development server**
-   ```bash
-   npm run dev
-   ```
-
-5. **Open in browser**
-   ```
-   http://localhost:3000
-   ```
-
-## Environment Variables
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `NOTION_API_KEY` | Your Notion integration token (starts with `secret_`) | Yes |
-| `NODE_ENV` | Environment (`development` or `production`) | No |
-
-## API Endpoints
-
-The serverless backend provides three main endpoints:
-
-### `GET /api/testConnection`
-
-Tests connection to Notion database.
-
-**Parameters:**
-- `databaseId` (query): The Notion database ID
-
-**Response:**
-```json
-{
-  "error": false,
-  "data": {
-    "id": "database-id",
-    "title": [...],
-    "properties": ["Title", "Case Number", ...],
-    "created_time": "...",
-    "last_edited_time": "..."
-  }
-}
-```
-
-### `POST /api/createPage`
-
-Creates a new page in the Notion database.
-
-**Body:**
-```json
-{
-  "databaseId": "your-database-id",
-  "properties": {
-    "Title": {
-      "title": [{"text": {"content": "Case Title"}}]
-    },
-    // ... other properties
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "error": false,
-  "data": {
-    "id": "page-id",
-    "url": "notion-page-url",
-    "created_time": "...",
-    "properties": {...}
-  }
-}
-```
-
-### `POST /api/queryDatabase`
-
-Queries the Notion database for existing pages.
-
-**Body:**
-```json
-{
-  "databaseId": "your-database-id",
-  "sorts": [...],
-  "page_size": 5,
-  "filter": {...} // optional
-}
-```
-
-**Response:**
-```json
-{
-  "error": false,
-  "data": {
-    "results": [...],
-    "next_cursor": "...",
-    "has_more": false
-  }
-}
-```
+- ✅ **Single File**: Everything embedded in one HTML file
+- ✅ **No Server**: Direct browser-to-Notion API communication
+- ✅ **No Build Step**: No npm, no dependencies, no compilation
+- ✅ **Instant Deploy**: Works immediately on any static hosting
+- ✅ **Easy Maintenance**: One file to understand and modify
 
 ## Setup Instructions
 
@@ -258,18 +46,13 @@ Queries the Notion database for existing pages.
 
 1. Create a new page in Notion
 2. Add a database with these properties:
-   - **Title** (Title) - Case title
-   - **Case Number** (Rich Text) - Case reference number
+   - **Case Name** (Title) - Main case identifier
+   - **Date** (Date) - Case date
    - **Court** (Rich Text) - Court name
    - **Judge** (Rich Text) - Judge name
-   - **Date** (Date) - Case date
-   - **Status** (Select) - Case status (Pending, Active, Closed, Appeal)
-   - **Parties** (Rich Text) - Parties involved
-   - **Type** (Select) - Case type (Civil, Criminal, Family, etc.)
-   - **Summary** (Rich Text) - Case summary
-   - **Outcome** (Rich Text) - Case outcome or ruling
-   - **Tags** (Multi-select) - Case tags
-   - **Priority** (Select) - Priority level (Low, Medium, High, Urgent)
+   - **Case Type** (Select) - Civil, Criminal, Family, Administrative
+   - **Status** (Select) - Pending, Active, Closed
+   - **Notes** (Rich Text) - Case details
 
 3. Share the database with your integration:
    - Click the "Share" button on your database page
@@ -278,59 +61,25 @@ Queries the Notion database for existing pages.
 
 4. Copy the database ID from the URL (32-character string)
 
-### 3. Deploy the Application
+### 3. Use the Application
 
-Choose one of the deployment options above (Vercel, Railway, or Render) and set the `NOTION_API_KEY` environment variable.
-
-### 4. Configure the Application
-
-1. Open your deployed application in the browser
-2. Paste your database ID in the "Database ID" field
-3. Click "Test Connection" to verify everything works
-4. Start adding case data!
+1. Open your GitHub Pages site
+2. Enter your Notion API key (will be saved locally)
+3. Enter your database ID
+4. Click "Test Connection" to verify
+5. Start adding case data!
 
 ## Data Fields
 
-The application supports the following case data fields:
+The application supports these case data fields:
 
-- **Case Title** (Required) - The name/title of the case
-- **Case Number** - Official case reference number
+- **Case Name** (Required) - The name/title of the case
+- **Case Date** - Important date related to the case
 - **Court** - Name of the court handling the case
 - **Judge** - Name of the presiding judge
-- **Case Date** - Important date related to the case
-- **Status** - Current status (Pending, Active, Closed, Appeal)
-- **Parties Involved** - Plaintiff vs Defendant information
-- **Case Type** - Type of case (Civil, Criminal, Family, Corporate, Constitutional, Administrative)
-- **Case Summary** - Brief description of the case
-- **Outcome/Ruling** - Court decision or current status
-- **Tags** - Comma-separated tags for categorization
-- **Priority** - Priority level (Low, Medium, High, Urgent)
-
-## Security & Privacy
-
-- **Enhanced Security**: Notion API keys stored securely on the server, never exposed to browsers
-- **Data Privacy**: Only database IDs are stored locally in your browser
-- **No Third-Party Storage**: No data is stored or cached by the application
-- **Direct API Connection**: Secure server-to-server communication with Notion
-
-## Technology Stack
-
-**Frontend:**
-- HTML5
-- CSS3 (with CSS Grid and Flexbox)
-- Vanilla JavaScript (ES6+)
-
-**Backend:**
-- Node.js 18+
-- Express.js
-- Axios for HTTP requests
-- CORS middleware
-- Notion API v2025-09-03
-
-**Deployment:**
-- Serverless functions (Vercel, Railway, Render)
-- Environment-based configuration
-- Auto-scaling infrastructure
+- **Case Type** - Type of case (Civil, Criminal, Family, Administrative)
+- **Status** - Current status (Pending, Active, Closed)
+- **Notes** - Additional case details
 
 ## Browser Compatibility
 
@@ -340,58 +89,30 @@ This application works in all modern browsers that support:
 - Local Storage
 - CSS Grid and Flexbox
 
-## Contributing
+## Security & Privacy
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Install dependencies (`npm install`)
-4. Set up your `.env` file with `NOTION_API_KEY`
-5. Make your changes
-6. Test thoroughly (`npm run dev`)
-7. Commit your changes (`git commit -m 'Add amazing feature'`)
-8. Push to the branch (`git push origin feature/amazing-feature`)
-9. Open a Pull Request
+- **Client-Side Only**: No server to compromise
+- **Local Storage**: API keys stored in browser's local storage
+- **Direct API**: Secure HTTPS communication with Notion
+- **No Third-Party**: No data passes through external services
 
 ## Troubleshooting
-
-### Fixing "Unexpected token '<'" Error
-
-This common error occurs when HTML is returned instead of JSON. Our AWS Lambda implementation resolves this by:
-
-1. **Eliminating CORS Issues**: Server-side API calls bypass browser restrictions
-2. **Proper Authentication**: Secure token management via AWS Secrets Manager
-3. **Correct API Endpoints**: Validated endpoints for Notion API 2025-09-03
-4. **Enhanced Error Handling**: Detailed error analysis and troubleshooting
-
-**For immediate troubleshooting:**
-- Ensure you're using the deployed version (not opening HTML files directly)
-- Check that your Notion integration has database access
-- Verify your API token is correctly formatted (starts with `secret_`)
-
-**Complete troubleshooting guide:** [AWS Lambda Deployment Guide](AWS_LAMBDA_DEPLOYMENT.md#error-analysis-and-troubleshooting)
-
----
 
 ### Common Issues
 
 **CORS Errors:**
-- This should no longer occur with the serverless backend
-- If you see CORS errors, ensure you're using the deployed version, not opening `index.html` directly
+- This shouldn't occur with modern browsers and HTTPS
+- Ensure you're accessing via GitHub Pages, not opening the file directly
 
 **Connection Failed:**
-- Verify your `NOTION_API_KEY` is set correctly in your deployment environment
+- Verify your API key starts with `secret_`
 - Check that your database ID is exactly 32 characters
-- Ensure your Notion integration has access to the database
+- Ensure your integration has access to the database
 
 **Database Not Found:**
-- Verify the database ID in the URL
+- Verify the database ID from the URL
 - Make sure you've shared the database with your integration
 - Check that the integration has "Edit" permissions
-
-**API Errors:**
-- Check the browser console for detailed error messages
-- Verify all required database properties exist
-- Ensure property types match what the application expects
 
 ### Getting Help
 
@@ -399,6 +120,13 @@ This common error occurs when HTML is returned instead of JSON. Our AWS Lambda i
 2. Verify your Notion integration setup
 3. Test your integration using the "Test Connection" button
 4. Open an issue on GitHub with details about your problem
+
+## Contributing
+
+1. Fork the repository
+2. Make your changes to `index.html`
+3. Test thoroughly by opening the file in a browser
+4. Submit a pull request
 
 ## License
 
@@ -408,4 +136,4 @@ This project is open source and available under the [MIT License](LICENSE).
 
 - Built for the legal community to streamline case data management
 - Powered by Notion's robust API and database capabilities
-- Designed with privacy and security as top priorities
+- Designed with simplicity and ease-of-use as top priorities

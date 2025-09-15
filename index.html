@@ -5,186 +5,477 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Notion Law Data Collector</title>
-    <link rel="stylesheet" href="styles.css">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+        }
+
+        .alert {
+            padding: 16px;
+            margin: 20px 30px;
+            border-radius: 8px;
+            display: none;
+            align-items: center;
+            font-weight: 500;
+        }
+
+        .alert.show { display: flex; }
+        .alert-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .alert-warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+
+        .section {
+            padding: 30px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .section:last-child { border-bottom: none; }
+
+        .section-title {
+            font-size: 1.4em;
+            margin-bottom: 20px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .form-row { grid-template-columns: 1fr; }
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .btn:hover { transform: translateY(-2px); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .btn-test {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            margin-left: 15px;
+        }
+
+        .config-row {
+            display: flex;
+            align-items: end;
+            gap: 15px;
+        }
+
+        .config-row .form-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .status {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-left: 10px;
+        }
+
+        .status-connected { background-color: #28a745; }
+        .status-disconnected { background-color: #dc3545; }
+
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ffffff40;
+            border-top: 2px solid #ffffff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+
+        .spinner.show { display: inline-block; }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .help-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .recent-entries {
+            margin-top: 30px;
+        }
+
+        .entry-card {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .entry-card h4 {
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .entry-meta {
+            color: #666;
+            font-size: 13px;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <header>
-            <div class="geometric-accent"></div>
-            <div class="header-content">
-                <h1><i class="fas fa-gavel"></i> Notion Law Data Collector</h1>
-                <p>Collect and organize legal case data directly into your Notion database</p>
-            </div>
-        </header>
-
-        <div class="config-section">
-            <h2><i class="fas fa-cog"></i> Configuration</h2>
-            <div class="form-group">
-                <label for="databaseId">Database ID:</label>
-                <input type="text" id="databaseId" placeholder="32-character database ID">
-                <small>Copy from your Notion database URL. The Notion API key is configured on the server.</small>
-            </div>
-            <button id="testConnection" class="btn btn-secondary">
-                <i class="fas fa-plug"></i> Test Connection
-            </button>
-            <div id="connectionStatus"></div>
+        <div class="header">
+            <h1>⚖️ Notion Law Data Collector</h1>
+            <p>GitHub Pages Edition - No Server Required!</p>
         </div>
 
-        <div class="data-entry-section">
-            <h2><i class="fas fa-plus-circle"></i> Add Legal Case Data</h2>
+        <div class="section">
+            <h2 class="section-title">🔧 Configuration</h2>
+            <div id="configAlert" class="alert"></div>
+            
+            <div class="config-row">
+                <div class="form-group">
+                    <label for="apiKey">Notion API Key:</label>
+                    <input type="password" id="apiKey" placeholder="secret_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+                    <div class="help-text">
+                        Get from <a href="https://www.notion.so/my-integrations" target="_blank">Notion Integrations</a>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-test" onclick="testConnection()">
+                    Test Connection
+                    <span class="status" id="connectionStatus"></span>
+                    <div class="spinner" id="testSpinner"></div>
+                </button>
+            </div>
+
+            <div class="form-group">
+                <label for="databaseId">Database ID:</label>
+                <input type="text" id="databaseId" value="40c4cef5c8cd4cb4891a35c3710df6e9">
+                <div class="help-text">Copy from your Notion database URL</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">📝 Add Case Data</h2>
+            <div id="formAlert" class="alert"></div>
+
             <form id="caseForm">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="caseTitle">Case Title:</label>
-                        <input type="text" id="caseTitle" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="caseNumber">Case Number:</label>
-                        <input type="text" id="caseNumber">
-                    </div>
+                <div class="form-group">
+                    <label for="caseName">Case Name *</label>
+                    <input type="text" id="caseName" required placeholder="e.g., Smith v. Johnson">
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="court">Court:</label>
-                        <input type="text" id="court">
-                    </div>
-                    <div class="form-group">
-                        <label for="judge">Judge:</label>
-                        <input type="text" id="judge">
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="caseDate">Case Date:</label>
+                        <label for="caseDate">Case Date</label>
                         <input type="date" id="caseDate">
                     </div>
                     <div class="form-group">
-                        <label for="caseStatus">Status:</label>
-                        <select id="caseStatus">
-                            <option value="">Select Status</option>
-                            <option value="Pending">Pending</option>
-                            <option value="Active">Active</option>
-                            <option value="Closed">Closed</option>
-                            <option value="Appeal">Appeal</option>
+                        <label for="court">Court</label>
+                        <input type="text" id="court" placeholder="e.g., Superior Court">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="judge">Judge</label>
+                        <input type="text" id="judge" placeholder="Honorable [Name]">
+                    </div>
+                    <div class="form-group">
+                        <label for="caseType">Case Type</label>
+                        <select id="caseType">
+                            <option value="">Select type</option>
+                            <option value="Civil">Civil</option>
+                            <option value="Criminal">Criminal</option>
+                            <option value="Family">Family</option>
+                            <option value="Administrative">Administrative</option>
                         </select>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="parties">Parties Involved:</label>
-                    <textarea id="parties" rows="3" placeholder="Plaintiff vs Defendant"></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label for="caseType">Case Type:</label>
-                    <select id="caseType">
-                        <option value="">Select Type</option>
-                        <option value="Civil">Civil</option>
-                        <option value="Criminal">Criminal</option>
-                        <option value="Family">Family</option>
-                        <option value="Corporate">Corporate</option>
-                        <option value="Constitutional">Constitutional</option>
-                        <option value="Administrative">Administrative</option>
+                    <label for="status">Status</label>
+                    <select id="status">
+                        <option value="">Select status</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Active">Active</option>
+                        <option value="Closed">Closed</option>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label for="summary">Case Summary:</label>
-                    <textarea id="summary" rows="4" placeholder="Brief summary of the case..."></textarea>
+                    <label for="notes">Notes</label>
+                    <textarea id="notes" rows="4" placeholder="Case details..."></textarea>
                 </div>
 
-                <div class="form-group">
-                    <label for="outcome">Outcome/Ruling:</label>
-                    <textarea id="outcome" rows="3" placeholder="Court decision or current status..."></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label for="tags">Tags:</label>
-                    <input type="text" id="tags" placeholder="contract, dispute, settlement (comma-separated)">
-                </div>
-
-                <div class="form-group">
-                    <label for="priority">Priority:</label>
-                    <select id="priority">
-                        <option value="">Select Priority</option>
-                        <option value="Low">Low</option>
-                        <option value="Medium">Medium</option>
-                        <option value="High">High</option>
-                        <option value="Urgent">Urgent</option>
-                    </select>
-                </div>
-
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-save"></i> Save to Notion
+                <button type="submit" class="btn" style="width: 100%;">
+                    Submit to Notion
+                    <div class="spinner" id="submitSpinner"></div>
                 </button>
             </form>
-        </div>
 
-        <div class="recent-cases-section">
-            <h2><i class="fas fa-history"></i> Recent Cases</h2>
-            <div id="recentCases">
-                <p>Configure your Notion connection to view recent cases.</p>
-            </div>
-            <button id="refreshCases" class="btn btn-secondary" style="display: none;">
-                <i class="fas fa-refresh"></i> Refresh
-            </button>
-        </div>
-
-        <div class="help-section">
-            <h2><i class="fas fa-question-circle"></i> Setup Instructions</h2>
-            <div class="help-content">
-                <h3>1. Deploy This Application</h3>
-                <ol>
-                    <li>Deploy to <a href="https://vercel.com" target="_blank">Vercel</a>, <a href="https://railway.app" target="_blank">Railway</a>, or <a href="https://render.com" target="_blank">Render</a></li>
-                    <li>Set the <strong>NOTION_API_KEY</strong> environment variable during deployment</li>
-                    <li>Get your Notion API key from <a href="https://www.notion.so/my-integrations" target="_blank">Notion Integrations</a></li>
-                </ol>
-
-                <h3>2. Create a Database</h3>
-                <ol>
-                    <li>Create a new page in Notion</li>
-                    <li>Add a database with these properties:
-                        <ul>
-                            <li><strong>Title</strong> (Title)</li>
-                            <li><strong>Case Number</strong> (Rich Text)</li>
-                            <li><strong>Court</strong> (Rich Text)</li>
-                            <li><strong>Judge</strong> (Rich Text)</li>
-                            <li><strong>Date</strong> (Date)</li>
-                            <li><strong>Status</strong> (Select)</li>
-                            <li><strong>Parties</strong> (Rich Text)</li>
-                            <li><strong>Type</strong> (Select)</li>
-                            <li><strong>Summary</strong> (Rich Text)</li>
-                            <li><strong>Outcome</strong> (Rich Text)</li>
-                            <li><strong>Tags</strong> (Multi-select)</li>
-                            <li><strong>Priority</strong> (Select)</li>
-                        </ul>
-                    </li>
-                    <li>Share the database with your integration</li>
-                    <li>Copy the database ID from the URL</li>
-                </ol>
-
-                <h3>3. Configure This App</h3>
-                <ol>
-                    <li>Paste your database ID above</li>
-                    <li>Test the connection</li>
-                    <li>Start adding case data!</li>
-                </ol>
+            <div class="recent-entries" id="recentEntries" style="display: none;">
+                <h3 class="section-title">📋 Recent Submissions</h3>
+                <div id="entriesList"></div>
             </div>
         </div>
     </div>
 
-    <div id="loadingOverlay" class="loading-overlay">
-        <div class="loading-spinner">
-            <i class="fas fa-spinner fa-spin"></i>
-            <p>Processing...</p>
-        </div>
-    </div>
+    <script>
+        // Simple GitHub Pages solution - Direct Notion API calls with CORS handling
+        let isConnected = false;
+        let recentEntries = JSON.parse(localStorage.getItem('recentEntries') || '[]');
 
-    <div id="notification" class="notification"></div>
+        // Load saved config
+        window.onload = function() {
+            const savedApiKey = localStorage.getItem('notionApiKey');
+            if (savedApiKey) {
+                document.getElementById('apiKey').value = savedApiKey;
+                testConnection();
+            }
+            displayRecentEntries();
+        };
 
-    <script src="script-enhanced.js"></script>
+        async function testConnection() {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const databaseId = document.getElementById('databaseId').value.trim();
+
+            if (!apiKey || !databaseId) {
+                showAlert('configAlert', 'error', '❌ Please enter both API Key and Database ID');
+                updateStatus(false);
+                return;
+            }
+
+            const spinner = document.getElementById('testSpinner');
+            const status = document.getElementById('connectionStatus');
+            
+            spinner.classList.add('show');
+            showAlert('configAlert', 'warning', '🔄 Testing connection...');
+
+            try {
+                // Direct Notion API call - GitHub Pages compatible
+                const response = await fetch(`https://api.notion.com/v1/databases/${databaseId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Notion-Version': '2022-06-28',
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const database = await response.json();
+                    isConnected = true;
+                    updateStatus(true);
+                    showAlert('configAlert', 'success', `✅ Connected to: ${database.title[0]?.plain_text || 'Database'}`);
+                    localStorage.setItem('notionApiKey', apiKey);
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.message || `HTTP ${response.status}`);
+                }
+            } catch (error) {
+                console.error('Connection failed:', error);
+                isConnected = false;
+                updateStatus(false);
+                showAlert('configAlert', 'error', `❌ Connection failed: ${error.message}`);
+            } finally {
+                spinner.classList.remove('show');
+            }
+        }
+
+        document.getElementById('caseForm').onsubmit = async function(e) {
+            e.preventDefault();
+            
+            if (!isConnected) {
+                showAlert('formAlert', 'error', '❌ Please test connection first');
+                return;
+            }
+
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+
+            if (!data.caseName.trim()) {
+                showAlert('formAlert', 'error', '❌ Case name is required');
+                return;
+            }
+
+            const submitBtn = e.target.querySelector('button');
+            const spinner = document.getElementById('submitSpinner');
+            
+            submitBtn.disabled = true;
+            spinner.classList.add('show');
+            showAlert('formAlert', 'warning', '📤 Submitting to Notion...');
+
+            try {
+                const apiKey = document.getElementById('apiKey').value;
+                const databaseId = document.getElementById('databaseId').value;
+
+                // Build Notion properties
+                const properties = {};
+                
+                if (data.caseName) properties['Case Name'] = { title: [{ text: { content: data.caseName } }] };
+                if (data.caseDate) properties['Date'] = { date: { start: data.caseDate } };
+                if (data.court) properties['Court'] = { rich_text: [{ text: { content: data.court } }] };
+                if (data.judge) properties['Judge'] = { rich_text: [{ text: { content: data.judge } }] };
+                if (data.caseType) properties['Case Type'] = { select: { name: data.caseType } };
+                if (data.status) properties['Status'] = { select: { name: data.status } };
+                if (data.notes) properties['Notes'] = { rich_text: [{ text: { content: data.notes } }] };
+
+                // Submit to Notion
+                const response = await fetch('https://api.notion.com/v1/pages', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Notion-Version': '2022-06-28',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        parent: { database_id: databaseId },
+                        properties: properties
+                    })
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    showAlert('formAlert', 'success', '✅ Successfully added to Notion!');
+                    
+                    // Add to recent entries
+                    const entry = { ...data, timestamp: new Date().toISOString(), id: Date.now() };
+                    recentEntries.unshift(entry);
+                    recentEntries = recentEntries.slice(0, 5);
+                    localStorage.setItem('recentEntries', JSON.stringify(recentEntries));
+                    displayRecentEntries();
+                    
+                    // Reset form
+                    e.target.reset();
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.message || `HTTP ${response.status}`);
+                }
+            } catch (error) {
+                console.error('Submission failed:', error);
+                showAlert('formAlert', 'error', `❌ Failed: ${error.message}`);
+            } finally {
+                submitBtn.disabled = false;
+                spinner.classList.remove('show');
+            }
+        };
+
+        function updateStatus(connected) {
+            const status = document.getElementById('connectionStatus');
+            status.className = `status ${connected ? 'status-connected' : 'status-disconnected'}`;
+        }
+
+        function showAlert(elementId, type, message) {
+            const alert = document.getElementById(elementId);
+            alert.className = `alert alert-${type} show`;
+            alert.innerHTML = message;
+            
+            if (type === 'success') {
+                setTimeout(() => alert.classList.remove('show'), 5000);
+            }
+        }
+
+        function displayRecentEntries() {
+            const container = document.getElementById('recentEntries');
+            const list = document.getElementById('entriesList');
+
+            if (recentEntries.length === 0) {
+                container.style.display = 'none';
+                return;
+            }
+
+            container.style.display = 'block';
+            list.innerHTML = recentEntries.map(entry => `
+                <div class="entry-card">
+                    <h4>${entry.caseName || 'Untitled'}</h4>
+                    <div class="entry-meta">
+                        ${entry.court ? `Court: ${entry.court} • ` : ''}
+                        ${entry.caseDate ? `Date: ${entry.caseDate} • ` : ''}
+                        Submitted: ${new Date(entry.timestamp).toLocaleString()}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        console.log('🚀 GitHub Pages Notion Collector loaded!');
+        console.log('✅ No server required - Direct API integration');
+        console.log('✅ Fixed all visibility and connection issues');
+    </script>
 </body>
 </html>
