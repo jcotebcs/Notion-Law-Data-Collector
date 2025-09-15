@@ -1,13 +1,21 @@
 {
   "name": "notion-law-data-collector",
   "version": "1.0.0",
-  "description": "A serverless backend for the Notion Law Data Collector to resolve CORS issues",
+  "description": "A multi-platform serverless application for collecting legal case data into Notion databases",
   "type": "module",
   "main": "api/index.js",
   "scripts": {
-    "dev": "vercel dev",
+    "dev": "vercel dev || node api/index.js",
     "build": "echo 'No build step required for serverless functions'",
-    "start": "node api/index.js"
+    "start": "node api/index.js",
+    "test": "echo 'No tests configured'",
+    "vercel": "vercel dev",
+    "netlify": "netlify dev",
+    "railway": "railway run node api/index.js",
+    "render": "node api/index.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "dependencies": {
     "axios": "^1.6.0",
@@ -16,15 +24,25 @@
     "express": "^4.18.2"
   },
   "devDependencies": {
-    "@vercel/node": "^3.0.0"
+    "@vercel/node": "^3.0.0",
+    "netlify-cli": "^17.0.0"
   },
   "keywords": [
     "notion",
     "legal",
     "serverless",
     "cors",
-    "api"
+    "api",
+    "vercel",
+    "netlify", 
+    "railway",
+    "render",
+    "multi-platform"
   ],
-  "author": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jcotebcs/Notion-Law-Data-Collector.git"
+  },
+  "author": "Notion Law Data Collector",
   "license": "MIT"
 }

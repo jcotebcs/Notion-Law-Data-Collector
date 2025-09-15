@@ -2,11 +2,32 @@ services:
   - type: web
     name: notion-law-data-collector
     env: node
+    region: oregon
     plan: free
     buildCommand: npm install
     startCommand: npm start
+    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
       - key: NOTION_API_KEY
         sync: false  # Set this manually in Render dashboard
+      - key: PORT
+        value: 10000
+    scaling:
+      minInstances: 1
+      maxInstances: 1
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1
+    headers:
+      - path: /api/*
+        name: Access-Control-Allow-Origin
+        value: "*"
+      - path: /api/*
+        name: Access-Control-Allow-Methods
+        value: "GET, POST, PUT, DELETE, OPTIONS"
+      - path: /api/*
+        name: Access-Control-Allow-Headers
+        value: "Content-Type, Authorization"
