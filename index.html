@@ -195,38 +195,58 @@
             color: #666;
             font-size: 13px;
         }
+
+        .config-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #28a745;
+        }
+
+        .config-status {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        .config-info code {
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 13px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>⚖️ Notion Law Data Collector</h1>
-            <p>GitHub Pages Edition - No Server Required!</p>
+            <p>GitHub Actions Edition - No CORS Issues!</p>
         </div>
 
-        <div class="section">
-            <h2 class="section-title">🔧 Configuration</h2>
+        <div class="section config-section">
+            <h2 class="section-title">🔧 GitHub Actions Configuration</h2>
             <div id="configAlert" class="alert"></div>
             
-            <div class="config-row">
-                <div class="form-group">
-                    <label for="apiKey">Notion API Key:</label>
-                    <input type="password" id="apiKey" placeholder="secret_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
-                    <div class="help-text">
-                        Get from <a href="https://www.notion.so/my-integrations" target="_blank">Notion Integrations</a>
-                    </div>
-                </div>
-                <button type="button" class="btn btn-test" onclick="testConnection()">
-                    Test Connection
+            <div class="config-info">
+                <p><strong>🚀 No CORS Issues!</strong> This application now uses GitHub Actions to fetch data from Notion, eliminating CORS problems.</p>
+                
+                <div class="config-status">
                     <span class="status" id="connectionStatus"></span>
-                    <div class="spinner" id="testSpinner"></div>
-                </button>
-            </div>
-
-            <div class="form-group">
-                <label for="databaseId">Database ID:</label>
-                <input type="text" id="databaseId" value="40c4cef5c8cd4cb4891a35c3710df6e9">
-                <div class="help-text">Copy from your Notion database URL</div>
+                    <button type="button" class="btn btn-test" onclick="testConnection()">
+                        Refresh Data
+                        <div class="spinner" id="testSpinner"></div>
+                    </button>
+                </div>
+                
+                <div class="help-text">
+                    <strong>Setup Requirements:</strong><br>
+                    1. Repository owner must add <code>NOTION_TOKEN</code> and <code>NOTION_DATABASE_ID</code> secrets<br>
+                    2. GitHub Actions workflow fetches data every 30 minutes<br>
+                    3. Data is stored as static JSON files served by GitHub Pages
+                </div>
             </div>
         </div>
 
@@ -237,28 +257,28 @@
             <form id="caseForm">
                 <div class="form-group">
                     <label for="caseName">Case Name *</label>
-                    <input type="text" id="caseName" required placeholder="e.g., Smith v. Johnson">
+                    <input type="text" id="caseName" name="caseName" required placeholder="e.g., Smith v. Johnson">
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
                         <label for="caseDate">Case Date</label>
-                        <input type="date" id="caseDate">
+                        <input type="date" id="caseDate" name="caseDate">
                     </div>
                     <div class="form-group">
                         <label for="court">Court</label>
-                        <input type="text" id="court" placeholder="e.g., Superior Court">
+                        <input type="text" id="court" name="court" placeholder="e.g., Superior Court">
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
                         <label for="judge">Judge</label>
-                        <input type="text" id="judge" placeholder="Honorable [Name]">
+                        <input type="text" id="judge" name="judge" placeholder="Honorable [Name]">
                     </div>
                     <div class="form-group">
                         <label for="caseType">Case Type</label>
-                        <select id="caseType">
+                        <select id="caseType" name="caseType">
                             <option value="">Select type</option>
                             <option value="Civil">Civil</option>
                             <option value="Criminal">Criminal</option>
@@ -270,7 +290,7 @@
 
                 <div class="form-group">
                     <label for="status">Status</label>
-                    <select id="status">
+                    <select id="status" name="status">
                         <option value="">Select status</option>
                         <option value="Pending">Pending</option>
                         <option value="Active">Active</option>
@@ -280,11 +300,11 @@
 
                 <div class="form-group">
                     <label for="notes">Notes</label>
-                    <textarea id="notes" rows="4" placeholder="Case details..."></textarea>
+                    <textarea id="notes" name="notes" rows="4" placeholder="Case details..."></textarea>
                 </div>
 
                 <button type="submit" class="btn" style="width: 100%;">
-                    Submit to Notion
+                    Save Case Data
                     <div class="spinner" id="submitSpinner"></div>
                 </button>
             </form>
@@ -297,72 +317,70 @@
     </div>
 
     <script>
-        // Simple GitHub Pages solution - Direct Notion API calls with CORS handling
+        // GitHub Actions-based solution - No CORS issues, data fetched via GitHub Actions
         let isConnected = false;
         let recentEntries = JSON.parse(localStorage.getItem('recentEntries') || '[]');
+        let notionData = null;
+        let lastDataUpdate = null;
 
-        // Load saved config
+        // Load saved config and fetch data
         window.onload = function() {
-            const savedApiKey = localStorage.getItem('notionApiKey');
-            if (savedApiKey) {
-                document.getElementById('apiKey').value = savedApiKey;
-                testConnection();
-            }
+            loadNotionData();
             displayRecentEntries();
         };
 
-        async function testConnection() {
-            const apiKey = document.getElementById('apiKey').value.trim();
-            const databaseId = document.getElementById('databaseId').value.trim();
-
-            if (!apiKey || !databaseId) {
-                showAlert('configAlert', 'error', '❌ Please enter both API Key and Database ID');
-                updateStatus(false);
-                return;
-            }
-
+        async function loadNotionData() {
             const spinner = document.getElementById('testSpinner');
-            const status = document.getElementById('connectionStatus');
             
-            spinner.classList.add('show');
-            showAlert('configAlert', 'warning', '🔄 Testing connection...');
+            if (spinner) {
+                spinner.classList.add('show');
+            }
+            
+            showAlert('configAlert', 'warning', '🔄 Loading data...');
 
             try {
-                // Direct Notion API call - GitHub Pages compatible
-                const response = await fetch(`https://api.notion.com/v1/databases/${databaseId}`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${apiKey}`,
-                        'Notion-Version': '2022-06-28',
-                        'Content-Type': 'application/json'
-                    }
-                });
-
+                // Try to load data from GitHub Actions generated file
+                const response = await fetch('./data/notion-data.json?' + Date.now()); // Cache busting
+                
                 if (response.ok) {
-                    const database = await response.json();
+                    const data = await response.json();
+                    notionData = data;
+                    lastDataUpdate = new Date(data.lastUpdated);
                     isConnected = true;
                     updateStatus(true);
-                    showAlert('configAlert', 'success', `✅ Connected to: ${database.title[0]?.plain_text || 'Database'}`);
-                    localStorage.setItem('notionApiKey', apiKey);
+                    
+                    const dataAge = Math.floor((Date.now() - lastDataUpdate.getTime()) / (1000 * 60)); // minutes
+                    const statusMessage = data.status === 'error' 
+                        ? `⚠️ Data available but with errors (${dataAge} min old)`
+                        : `✅ Connected to: ${data.databaseInfo?.title || 'Database'} (${dataAge} min old)`;
+                    
+                    showAlert('configAlert', 'success', statusMessage);
+                    console.log('📊 Loaded Notion data:', data);
                 } else {
-                    const error = await response.json();
-                    throw new Error(error.message || `HTTP ${response.status}`);
+                    throw new Error(`Failed to load data: ${response.status}`);
                 }
             } catch (error) {
-                console.error('Connection failed:', error);
+                console.error('Failed to load Notion data:', error);
                 isConnected = false;
                 updateStatus(false);
-                showAlert('configAlert', 'error', `❌ Connection failed: ${error.message}`);
+                showAlert('configAlert', 'error', '❌ Failed to load data. Make sure GitHub Actions workflow has run and repository secrets are configured.');
             } finally {
-                spinner.classList.remove('show');
+                if (spinner) {
+                    spinner.classList.remove('show');
+                }
             }
+        }
+
+        async function testConnection() {
+            // For GitHub Actions approach, we just reload the data
+            await loadNotionData();
         }
 
         document.getElementById('caseForm').onsubmit = async function(e) {
             e.preventDefault();
             
             if (!isConnected) {
-                showAlert('formAlert', 'error', '❌ Please test connection first');
+                showAlert('formAlert', 'error', '❌ Data not loaded. Please wait for connection.');
                 return;
             }
 
@@ -379,57 +397,41 @@
             
             submitBtn.disabled = true;
             spinner.classList.add('show');
-            showAlert('formAlert', 'warning', '📤 Submitting to Notion...');
+            showAlert('formAlert', 'warning', '📤 Saving case data...');
 
             try {
-                const apiKey = document.getElementById('apiKey').value;
-                const databaseId = document.getElementById('databaseId').value;
-
-                // Build Notion properties
-                const properties = {};
+                // Since we can't directly submit to Notion via GitHub Actions from the browser,
+                // we'll save to local storage and inform user about manual process
                 
-                if (data.caseName) properties['Case Name'] = { title: [{ text: { content: data.caseName } }] };
-                if (data.caseDate) properties['Date'] = { date: { start: data.caseDate } };
-                if (data.court) properties['Court'] = { rich_text: [{ text: { content: data.court } }] };
-                if (data.judge) properties['Judge'] = { rich_text: [{ text: { content: data.judge } }] };
-                if (data.caseType) properties['Case Type'] = { select: { name: data.caseType } };
-                if (data.status) properties['Status'] = { select: { name: data.status } };
-                if (data.notes) properties['Notes'] = { rich_text: [{ text: { content: data.notes } }] };
-
-                // Submit to Notion
-                const response = await fetch('https://api.notion.com/v1/pages', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${apiKey}`,
-                        'Notion-Version': '2022-06-28',
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        parent: { database_id: databaseId },
-                        properties: properties
-                    })
-                });
-
-                if (response.ok) {
-                    const result = await response.json();
-                    showAlert('formAlert', 'success', '✅ Successfully added to Notion!');
-                    
-                    // Add to recent entries
-                    const entry = { ...data, timestamp: new Date().toISOString(), id: Date.now() };
-                    recentEntries.unshift(entry);
-                    recentEntries = recentEntries.slice(0, 5);
-                    localStorage.setItem('recentEntries', JSON.stringify(recentEntries));
-                    displayRecentEntries();
-                    
-                    // Reset form
-                    e.target.reset();
-                } else {
-                    const error = await response.json();
-                    throw new Error(error.message || `HTTP ${response.status}`);
-                }
+                // Add to recent entries and show as "pending"
+                const entry = { 
+                    ...data, 
+                    timestamp: new Date().toISOString(), 
+                    id: Date.now(),
+                    status: 'pending_submission',
+                    note: 'Saved locally - will need manual addition to Notion or future workflow enhancement'
+                };
+                
+                recentEntries.unshift(entry);
+                recentEntries = recentEntries.slice(0, 10); // Keep more entries since they're pending
+                localStorage.setItem('recentEntries', JSON.stringify(recentEntries));
+                displayRecentEntries();
+                
+                // Also save to a pending submissions queue
+                let pendingSubmissions = JSON.parse(localStorage.getItem('pendingSubmissions') || '[]');
+                pendingSubmissions.unshift(entry);
+                localStorage.setItem('pendingSubmissions', JSON.stringify(pendingSubmissions));
+                
+                showAlert('formAlert', 'success', `✅ Case data saved locally! 
+                    <br><small>Note: With the GitHub Actions approach, new entries need to be added directly to your Notion database. 
+                    The data here will be refreshed when the workflow runs.</small>`);
+                
+                // Reset form
+                e.target.reset();
+                
             } catch (error) {
-                console.error('Submission failed:', error);
-                showAlert('formAlert', 'error', `❌ Failed: ${error.message}`);
+                console.error('Save failed:', error);
+                showAlert('formAlert', 'error', `❌ Failed to save: ${error.message}`);
             } finally {
                 submitBtn.disabled = false;
                 spinner.classList.remove('show');
