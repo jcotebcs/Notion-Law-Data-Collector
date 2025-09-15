@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notion Law Data Collector</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        #config {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        #config label {
+            font-weight: bold;
+        }
+        #config input {
+            width: 400px;
+            padding: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .case-form {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            display: none; /* Hidden by default */
+        }
+        .case-form.active {
+            display: block;
+        }
+        .form-field {
+            margin-bottom: 10px;
+        }
+        .form-field label {
+            display: inline-block;
+            width: 100px;
+            font-weight: bold;
+        }
+        .form-field input, .form-field textarea, .form-field select {
+            width: 300px;
+            padding: 5px;
+        }
+        .results-container {
+            margin-top: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            padding: 10px;
+        }
+        .result-item {
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        .toggle-form-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+        }
+        .search-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 3px;
+        }
+        .save-btn {
+            background-color: #ffc107;
+            color: black;
+            border: none;
+            border-radius: 3px;
+        }
+        @media (max-width: 600px) {
+            .form-field input, .form-field textarea, .form-field select {
+                width: 100%;
+            }
+            .form-field label {
+                width: 100%;
+                margin-bottom: 5px;
+            }
+            #config input {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Notion Law Data Collector</h1>
+    
+    <div id="config">
+        <label for="notion-token">Notion Integration Token:</label>
+        <input type="password" id="notion-token" placeholder="Enter your secret_... token here">
+        <p><small><strong>Warning:</strong> This token will be used client-side. For production, use a secure backend proxy.</small></p>
+    </div>
+
+    <table id="case-table">
+        <thead>
+            <tr>
+                <th>Case Name</th>
+                <th>Date</th>
+                <th>Court</th>
+                <th>Judge</th>
+                <th>Case Type</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="case-table-body"></tbody>
+    </table>
+
+    <script>
+        // Load case data from notion-data.json
+        async function loadCases() {
+            try {
+                const response = await fetch('data/notion-data.json');
+                const data = await response.json();
+                const cases = data.entries || data;
+                const tbody = document.getElementById('case-table-body');
+
+                cases.forEach((caseData, index) => {
+                    // Create table row
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${caseData.case_name || 'N/A'}</td>
+                        <td>${caseData.case_date?.start || 'N/A'}</td>
+                        <td>${caseData.court || 'N/A'}</td>
+                        <td>${caseData.judge || 'N/A'}</td>
+                        <td>${caseData.case_type || 'N/A'}</td>
+                        <td>${caseData.status || 'N/A'}</td>
+                        <td><button class="toggle-form-btn" onclick="toggleForm(${index})">View/Edit</button></td>
+                    `;
+                    tbody.appendChild(row);
+
+                    // Create form for each case
+                    const form = document.createElement('div');
+                    form.id = `form-${index}`;
+                    form.className = 'case-form';
+                    form.innerHTML = `
+                        <input type="hidden" id="page-id-${index}" value="${caseData.id}">
+                        <div class="form-field">
+                            <label>Case Name:</label>
+                            <input type="text" id="case-name-${index}" value="${caseData.case_name || ''}">
+                        </div>
+                        <div class="form-field">
+                            <label>Date:</label>
+                            <input type="text" id="date-${index}" value="${caseData.case_date?.start || ''}">
+                        </div>
+                        <div class="form-field">
+                            <label>Court:</label>
+                            <input type="text" id="court-${index}" value="${caseData.court || ''}">
+                        </div>
+                        <div class="form-field">
+                            <label>Judge:</label>
+                            <input type="text" id="judge-${index}" value="${caseData.judge || ''}">
+                        </div>
+                        <div class="form-field">
+                            <label>Case Type:</label>
+                            <input type="text" id="case-type-${index}" value="${caseData.case_type || ''}">
+                        </div>
+                        <div class="form-field">
+                            <label>Status:</label>
+                            <input type="text" id="status-${index}" value="${caseData.status || ''}">
+                        </div>
+                        <div class="form-field">
+                            <label>Citation:</label>
+                            <input type="text" id="citation-${index}" value="">
+                        </div>
+                        <div class="form-field">
+                            <label>Author:</label>
+                            <input type="text" id="author-${index}" value="">
+                        </div>
+                        <div class="form-field">
+                            <label>CL Case Type:</label>
+                            <input type="text" id="cl-case-type-${index}" value="">
+                        </div>
+                        <div class="form-field">
+                            <label>CL Status:</label>
+                            <input type="text" id="cl-status-${index}" value="">
+                        </div>
+                        <div class="form-field">
+                            <label>Attorney:</label>
+                            <input type="text" id="attorney-${index}" value="">
+                        </div>
+                        <div class="form-field">
+                            <label>Summary:</label>
+                            <textarea id="summary-${index}"></textarea>
+                        </div>
+                        <div class="form-field">
+                            <label>Notes:</label>
+                            <textarea id="notes-${index}">${caseData.notes || ''}</textarea>
+                        </div>
+                        <button class="search-btn" onclick="searchCourtListener(${index}, '${caseData.case_name}')">Search CourtListener</button>
+                        <button class="save-btn" onclick="saveToNotion(${index})">Save to Notion</button>
+                        <div class="results-container" id="results-${index}"></div>
+                    `;
+                    document.body.appendChild(form);
+
+                    // Display existing CourtListener results
+                    if (caseData.courtlistener_search?.results) {
+                        displayResults(index, caseData.courtlistener_search);
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading cases:', error);
+                alert('Failed to load case data. Ensure data/notion-data.json exists.');
+            }
+        }
+
+        function toggleForm(index) {
+            const form = document.getElementById(`form-${index}`);
+            form.classList.toggle('active');
+        }
+
+        function searchCourtListener(index, caseName) {
+            alert('For security reasons, new CourtListener searches require a backend proxy. This button currently displays existing search results from the Python script. Real-time searches would expose the API key client-side.');
+        }
+
+        function displayResults(index, searchData) {
+            const resultsContainer = document.getElementById(`results-${index}`);
+            if (!searchData.results?.length) {
+                resultsContainer.innerHTML = '<p>No CourtListener results found.</p>';
+                return;
+            }
+
+            resultsContainer.innerHTML = `<p><strong>Search Query:</strong> ${searchData.search_query} (${searchData.searched_at})</p>`;
+            searchData.results.forEach(result => {
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'result-item';
+                resultDiv.innerHTML = `
+                    <p><strong>Case:</strong> ${result.case_name}</p>
+                    <p><strong>Date Filed:</strong> ${result.date_filed || 'N/A'}</p>
+                    <p><strong>Court:</strong> ${result.court || 'N/A'}</p>
+                    <p><strong>Docket:</strong> ${result.docket_number || 'N/A'}</p>
+                    <p><strong>Citation:</strong> ${result.citation || 'N/A'}</p>
+                    <p><strong>Author:</strong> ${result.author || 'N/A'}</p>
+                    <p><strong>Case Type:</strong> ${result.case_type || 'N/A'}</p>
+                    <p><strong>Status:</strong> ${result.status || 'N/A'}</p>
+                    <p><strong>Attorney:</strong> ${result.attorney || 'N/A'}</p>
+                    <p><strong>Summary:</strong> ${result.summary || 'N/A'}</p>
+                    <p><a href="https://www.courtlistener.com${result.url}" target="_blank">View on CourtListener</a></p>
+                    <button onclick="fillForm(${index}, '${escapeQuotes(result.case_name)}', '${escapeQuotes(result.court)}', '${result.date_filed}', '${escapeQuotes(result.citation)}', '${escapeQuotes(result.author)}', '${escapeQuotes(result.case_type)}', '${escapeQuotes(result.status)}', '${escapeQuotes(result.attorney)}', '${escapeQuotes(result.summary)}')">Use This Data</button>
+                `;
+                resultsContainer.appendChild(resultDiv);
+            });
+        }
+
+        function escapeQuotes(str) {
+            return str ? str.replace(/'/g, "\\'").replace(/"/g, '\\"') : '';
+        }
+
+        function fillForm(index, caseName, court, dateFiled, citation, author, caseType, status, attorney, summary) {
+            document.getElementById(`case-name-${index}`).value = caseName || '';
+            document.getElementById(`date-${index}`).value = dateFiled || '';
+            document.getElementById(`court-${index}`).value = court || '';
+            document.getElementById(`citation-${index}`).value = citation || '';
+            document.getElementById(`author-${index}`).value = author || '';
+            document.getElementById(`cl-case-type-${index}`).value = caseType || '';
+            document.getElementById(`cl-status-${index}`).value = status || '';
+            document.getElementById(`attorney-${index}`).value = attorney || '';
+            document.getElementById(`summary-${index}`).value = summary || '';
+        }
+
+        async function saveToNotion(index) {
+            const token = document.getElementById('notion-token').value;
+            if (!token) {
+                alert('Please enter your Notion Integration Token first.');
+                return;
+            }
+
+            const pageId = document.getElementById(`page-id-${index}`).value;
+            const caseName = document.getElementById(`case-name-${index}`).value;
+            const date = document.getElementById(`date-${index}`).value;
+            const court = document.getElementById(`court-${index}`).value;
+            const judge = document.getElementById(`judge-${index}`).value;
+            const caseType = document.getElementById(`case-type-${index}`).value;
+            const status = document.getElementById(`status-${index}`).value;
+            const notes = document.getElementById(`notes-${index}`).value;
+            
+            // CourtListener fields
+            const citation = document.getElementById(`citation-${index}`).value;
+            const author = document.getElementById(`author-${index}`).value;
+            const clCaseType = document.getElementById(`cl-case-type-${index}`).value;
+            const clStatus = document.getElementById(`cl-status-${index}`).value;
+            const attorney = document.getElementById(`attorney-${index}`).value;
+            const summary = document.getElementById(`summary-${index}`).value;
+
+            // Append CourtListener data to notes if any CL fields are filled
+            let updatedNotes = notes;
+            const clData = [];
+            if (citation) clData.push(`Citation: ${citation}`);
+            if (author) clData.push(`Author: ${author}`);
+            if (clCaseType) clData.push(`Case Type: ${clCaseType}`);
+            if (clStatus) clData.push(`Status: ${clStatus}`);
+            if (attorney) clData.push(`Attorney: ${attorney}`);
+            if (summary) clData.push(`Summary: ${summary}`);
+            
+            if (clData.length > 0) {
+                updatedNotes += (updatedNotes ? '\n\n' : '') + 'CourtListener Data:\n' + clData.join('\n');
+            }
+
+            const properties = {};
+            
+            // Title field (Case Name)
+            if (caseName) {
+                properties.Name = {
+                    title: [{ text: { content: caseName } }]
+                };
+            }
+            
+            // Date field
+            if (date) {
+                properties.Date = {
+                    date: { start: date }
+                };
+            }
+            
+            // Rich text fields
+            if (court) {
+                properties.Court = {
+                    rich_text: [{ text: { content: court } }]
+                };
+            }
+            
+            if (judge) {
+                properties.Judge = {
+                    rich_text: [{ text: { content: judge } }]
+                };
+            }
+            
+            if (updatedNotes) {
+                properties.Notes = {
+                    rich_text: [{ text: { content: updatedNotes } }]
+                };
+            }
+            
+            // Select fields
+            if (caseType) {
+                properties['Case Type'] = {
+                    select: { name: caseType }
+                };
+            }
+            
+            if (status) {
+                properties.Status = {
+                    select: { name: status }
+                };
+            }
+
+            try {
+                const response = await fetch(`https://api.notion.com/v1/pages/${pageId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                        'Notion-Version': '2022-06-28'
+                    },
+                    body: JSON.stringify({ properties })
+                });
+
+                if (response.ok) {
+                    alert('✅ Case data saved to Notion successfully!');
+                } else {
+                    const error = await response.json();
+                    console.error('Notion API error:', error);
+                    alert(`❌ Failed to save to Notion: ${error.message || 'Unknown error'}`);
+                }
+            } catch (error) {
+                console.error('Error saving to Notion:', error);
+                alert(`❌ Error saving to Notion: ${error.message}`);
+            }
+        }
+
+        // Load cases when page loads
+        window.addEventListener('load', loadCases);
+    </script>
+</body>
+</html>
