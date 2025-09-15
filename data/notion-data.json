@@ -1,16 +1,73 @@
 {
-  "lastUpdated": "2024-01-01T00:00:00.000Z",
+  "lastUpdated": "2025-09-15T02:54:47.580734",
+  "status": "success",
   "databaseInfo": {
-    "id": "placeholder",
-    "title": "Notion Law Database",
-    "url": "",
-    "total_entries": 0
+    "id": "40c4cef5-c8cd-4cb4-891a-35c3710df6e9",
+    "title": "Case Data Collector",
+    "url": "https://www.notion.so/40c4cef5c8cd4cb4891a35c3710df6e9",
+    "total_entries": 4
   },
-  "entries": [],
+  "entries": [
+    {
+      "id": "26f61a6e-485d-80bb-a075-cdc2a525026c",
+      "created_time": "2025-09-15T01:16:00.000Z",
+      "last_edited_time": "2025-09-15T01:17:00.000Z",
+      "case_name": "",
+      "case_date": null,
+      "court": "",
+      "judge": "",
+      "case_type": "",
+      "status": "",
+      "notes": "",
+      "courtlistener_search": null
+    },
+    {
+      "id": "26e61a6e-485d-80eb-8417-fc9e252f1dcb",
+      "created_time": "2025-09-14T22:51:00.000Z",
+      "last_edited_time": "2025-09-14T22:52:00.000Z",
+      "case_name": "",
+      "case_date": null,
+      "court": "",
+      "judge": "",
+      "case_type": "",
+      "status": "",
+      "notes": "",
+      "courtlistener_search": null
+    },
+    {
+      "id": "26e61a6e-485d-80c7-8e79-ebd26b9046d1",
+      "created_time": "2025-09-14T22:47:00.000Z",
+      "last_edited_time": "2025-09-14T22:50:00.000Z",
+      "case_name": "",
+      "case_date": null,
+      "court": "",
+      "judge": "",
+      "case_type": "",
+      "status": "",
+      "notes": "",
+      "courtlistener_search": null
+    },
+    {
+      "id": "26c61a6e-485d-801f-8870-c29a803a941a",
+      "created_time": "2025-09-12T23:28:00.000Z",
+      "last_edited_time": "2025-09-12T23:28:00.000Z",
+      "case_name": "",
+      "case_date": null,
+      "court": "",
+      "judge": "",
+      "case_type": "",
+      "status": "",
+      "notes": "",
+      "courtlistener_search": null
+    }
+  ],
   "metadata": {
-    "version": "1.0",
-    "source": "placeholder",
-    "fetchedAt": "2024-01-01T00:00:00.000Z",
-    "note": "This is a placeholder file. Real data will be populated by GitHub Actions workflow when NOTION_TOKEN and NOTION_DATABASE_ID secrets are configured."
+    "version": "2.0",
+    "source": "notion-law-data-collector-script",
+    "fetchedAt": "2025-09-15T02:54:47.580749",
+    "features": {
+      "courtlistener_integration": true,
+      "pagination_support": true
+    }
   }
 }
