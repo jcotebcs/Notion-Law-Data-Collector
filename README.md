@@ -12,6 +12,7 @@ A GitHub Actions-powered application for collecting and organizing legal case da
 - 📊 **Real-time Data**: View your latest Notion database entries
 - 🎯 **Zero Client Dependencies**: Pure HTML, CSS, and JavaScript solution
 - 🔒 **Secure**: API credentials stored as GitHub repository secrets
+- 🆕 **CourtListener Integration**: Optional integration with CourtListener API for enhanced case data
 
 ## Quick Start
 
@@ -71,6 +72,33 @@ The application uses a GitHub Actions workflow (`.github/workflows/fetch-notion-
    ```
    40c4cef5c8cd4cb4891a35c3710df6e9
    ```
+
+   **COURT_LISTENER_API_KEY** (Optional): CourtListener API token for enhanced case data
+   ```
+   your_courtlistener_api_token
+   ```
+
+## CourtListener Integration (Optional)
+
+The application now supports optional integration with the CourtListener API to enhance your case data with additional court records and legal information.
+
+### Benefits
+- 🔍 **Automatic Case Search**: Searches for matching cases in CourtListener's database
+- 📊 **Enhanced Data**: Adds court information, docket numbers, and direct case URLs
+- 📈 **Search Statistics**: Tracks search success rates in summary data
+- 🔗 **Direct Links**: Provides direct links to full case records
+
+### Setup
+1. Create a free account at [CourtListener.com](https://www.courtlistener.com/)
+2. Generate an API token from your account settings
+3. Add the token as `COURT_LISTENER_API_KEY` repository secret
+4. The integration will automatically activate on the next workflow run
+
+### How It Works
+- For each case in your Notion database, the system searches CourtListener using the case name
+- Up to 5 matching results are retrieved and stored with each case
+- Search results include case names, filing dates, courts, docket numbers, and URLs
+- All searches are performed server-side to protect your API credentials
 
 ### 5. Enable GitHub Actions and Pages
 
