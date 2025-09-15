@@ -1,0 +1,590 @@
+
+
+
+    
+    
+    Notion Law Data Collector
+    
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+<pre><code>    body {
+        font-family: -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+    }
+
+    .container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+
+    .header {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: white;
+        padding: 30px;
+        text-align: center;
+    }
+
+    .header h1 {
+        font-size: 2.2em;
+        margin-bottom: 10px;
+    }
+
+    .alert {
+        padding: 16px;
+        margin: 20px 30px;
+        border-radius: 8px;
+        display: none;
+        align-items: center;
+        font-weight: 500;
+    }
+
+    .alert.show { display: flex; }
+    .alert-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .alert-warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+
+    .section {
+        padding: 30px;
+        border-bottom: 1px solid #eee;
+    }
+
+    .section:last-child { border-bottom: none; }
+
+    .section-title {
+        font-size: 1.4em;
+        margin-bottom: 20px;
+        color: #333;
+        font-weight: 600;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+        color: #333;
+    }
+
+    .form-group input, .form-group select, .form-group textarea {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 16px;
+    }
+
+    .form-group textarea {
+        height: 80px;
+        resize: vertical;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+
+    .btn {
+        padding: 12px 24px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 500;
+        transition: transform 0.2s;
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+    }
+
+    .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .btn-secondary {
+        background: #6c757d;
+    }
+
+    .connection-status {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .status {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+    }
+
+    .status-connected { background: #28a745; }
+    .status-disconnected { background: #dc3545; }
+    .status-connecting { background: #ffc107; animation: pulse 1.5s infinite; }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+
+    .spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .search-results {
+        margin-top: 20px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 6px;
+        border: 1px solid #dee2e6;
+    }
+
+    .search-result {
+        margin-bottom: 15px;
+        padding: 10px;
+        background: white;
+        border-radius: 4px;
+        border-left: 4px solid #667eea;
+    }
+
+    .search-result h4 {
+        margin-bottom: 5px;
+        color: #333;
+    }
+
+    .search-result p {
+        margin: 3px 0;
+        color: #666;
+        font-size: 14px;
+    }
+
+    .recent-entries {
+        margin-top: 30px;
+    }
+
+    .entry-card {
+        padding: 15px;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        background: #f8f9fa;
+    }
+
+    .entry-card h4 {
+        margin-bottom: 5px;
+        color: #333;
+    }
+
+    .entry-meta {
+        font-size: 14px;
+        color: #666;
+    }
+
+    @media (max-width: 768px) {
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+    }
+&lt;/style&gt;
+</code></pre>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚖️ Notion Law Data Collector</h1>
+            <p>Streamline your legal case management with seamless Notion integration</p>
+        </div>
+
+<pre><code>    &lt;div class=&quot;section&quot;&gt;
+        &lt;div class=&quot;connection-status&quot;&gt;
+            &lt;div class=&quot;status status-disconnected&quot; id=&quot;connectionStatus&quot;&gt;&lt;/div&gt;
+            &lt;span&gt;Connection Status: &lt;span id=&quot;statusText&quot;&gt;Disconnected&lt;/span&gt;&lt;/span&gt;
+        &lt;/div&gt;
+
+        &lt;div id=&quot;formAlert&quot; class=&quot;alert alert-error&quot;&gt;&lt;/div&gt;
+
+        &lt;div class=&quot;form-group&quot;&gt;
+            &lt;label for=&quot;notionToken&quot;&gt;Notion Integration Token:&lt;/label&gt;
+            &lt;input type=&quot;password&quot; id=&quot;notionToken&quot; placeholder=&quot;secret_...&quot;&gt;
+            &lt;small style=&quot;color: #666;&quot;&gt;Enter your Notion integration token to connect&lt;/small&gt;
+        &lt;/div&gt;
+
+        &lt;div class=&quot;form-row&quot;&gt;
+            &lt;div class=&quot;form-group&quot;&gt;
+                &lt;label for=&quot;caseName&quot;&gt;Case Name:&lt;/label&gt;
+                &lt;input type=&quot;text&quot; id=&quot;caseName&quot; placeholder=&quot;e.g., Smith v. Jones&quot;&gt;
+            &lt;/div&gt;
+            &lt;div class=&quot;form-group&quot;&gt;
+                &lt;label for=&quot;caseDate&quot;&gt;Date:&lt;/label&gt;
+                &lt;input type=&quot;date&quot; id=&quot;caseDate&quot;&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+
+        &lt;div class=&quot;form-row&quot;&gt;
+            &lt;div class=&quot;form-group&quot;&gt;
+                &lt;label for=&quot;court&quot;&gt;Court:&lt;/label&gt;
+                &lt;input type=&quot;text&quot; id=&quot;court&quot; placeholder=&quot;e.g., Supreme Court&quot;&gt;
+            &lt;/div&gt;
+            &lt;div class=&quot;form-group&quot;&gt;
+                &lt;label for=&quot;judge&quot;&gt;Judge:&lt;/label&gt;
+                &lt;input type=&quot;text&quot; id=&quot;judge&quot; placeholder=&quot;e.g., John Doe&quot;&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+
+        &lt;div class=&quot;form-row&quot;&gt;
+            &lt;div class=&quot;form-group&quot;&gt;
+                &lt;label for=&quot;caseType&quot;&gt;Case Type:&lt;/label&gt;
+                &lt;select id=&quot;caseType&quot;&gt;
+                    &lt;option value=&quot;&quot;&gt;Select Type&lt;/option&gt;
+                    &lt;option value=&quot;Civil&quot;&gt;Civil&lt;/option&gt;
+                    &lt;option value=&quot;Criminal&quot;&gt;Criminal&lt;/option&gt;
+                    &lt;option value=&quot;Constitutional&quot;&gt;Constitutional&lt;/option&gt;
+                    &lt;option value=&quot;Administrative&quot;&gt;Administrative&lt;/option&gt;
+                &lt;/select&gt;
+            &lt;/div&gt;
+            &lt;div class=&quot;form-group&quot;&gt;
+                &lt;label for=&quot;status&quot;&gt;Status:&lt;/label&gt;
+                &lt;select id=&quot;status&quot;&gt;
+                    &lt;option value=&quot;&quot;&gt;Select Status&lt;/option&gt;
+                    &lt;option value=&quot;Pending&quot;&gt;Pending&lt;/option&gt;
+                    &lt;option value=&quot;In Progress&quot;&gt;In Progress&lt;/option&gt;
+                    &lt;option value=&quot;Decided&quot;&gt;Decided&lt;/option&gt;
+                    &lt;option value=&quot;Dismissed&quot;&gt;Dismissed&lt;/option&gt;
+                &lt;/select&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+
+        &lt;div class=&quot;form-group&quot;&gt;
+            &lt;label for=&quot;notes&quot;&gt;Notes:&lt;/label&gt;
+            &lt;textarea id=&quot;notes&quot; placeholder=&quot;Additional case details...&quot;&gt;&lt;/textarea&gt;
+        &lt;/div&gt;
+
+        &lt;button class=&quot;btn&quot; id=&quot;searchBtn&quot; onclick=&quot;searchCourtListener()&quot; disabled&gt;🔍 Search CourtListener&lt;/button&gt;
+        &lt;button class=&quot;btn&quot; id=&quot;submitBtn&quot; onclick=&quot;submitCase()&quot;&gt;📝 Submit Case&lt;/button&gt;
+
+        &lt;div id=&quot;searchResults&quot; class=&quot;search-results&quot; style=&quot;display: none;&quot;&gt;&lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;div class=&quot;section recent-entries&quot;&gt;
+        &lt;h3 class=&quot;section-title&quot;&gt;Recent Entries&lt;/h3&gt;
+        &lt;div id=&quot;recentEntries&quot; style=&quot;display: none;&quot;&gt;
+            &lt;div id=&quot;entriesList&quot;&gt;&lt;/div&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;script&gt;
+    let recentEntries = JSON.parse(localStorage.getItem(&#39;recentEntries&#39;)) || [];
+    let isConnected = false;
+    let searchResults = [];
+
+    // Case type and status options (can be extended)
+    const caseTypes = [&#39;Civil&#39;, &#39;Criminal&#39;, &#39;Constitutional&#39;, &#39;Administrative&#39;];
+    const statuses = [&#39;Pending&#39;, &#39;In Progress&#39;, &#39;Decided&#39;, &#39;Dismissed&#39;];
+
+    // Initialize
+    document.addEventListener(&#39;DOMContentLoaded&#39;, function() {
+        updateStatus(false);
+        displayRecentEntries();
+        setupEventListeners();
+    });
+
+    function setupEventListeners() {
+        const tokenInput = document.getElementById(&#39;notionToken&#39;);
+        const caseNameInput = document.getElementById(&#39;caseName&#39;);
+        const searchBtn = document.getElementById(&#39;searchBtn&#39;);
+
+        tokenInput.addEventListener(&#39;input&#39;, validateToken);
+        caseNameInput.addEventListener(&#39;input&#39;, toggleSearchButton);
+    }
+
+    async function validateToken() {
+        const token = document.getElementById(&#39;notionToken&#39;).value.trim();
+        if (!token || !token.startsWith(&#39;secret_&#39;)) {
+            updateStatus(false);
+            return;
+        }
+
+        try {
+            updateStatus(true, &#39;Connecting...&#39;);
+            // Simple validation - in production, test with a read-only API call
+            const response = await fetch(&#39;https://api.notion.com/v1/users&#39;, {
+                headers: {
+                    &#39;Authorization&#39;: `Bearer ${token}`,
+                    &#39;Notion-Version&#39;: &#39;2022-06-28&#39;
+                }
+            });
+            if (response.ok) {
+                updateStatus(true);
+                isConnected = true;
+                showAlert(&#39;formAlert&#39;, &#39;success&#39;, &#39;✅ Connected to Notion successfully!&#39;);
+            } else {
+                updateStatus(false);
+                showAlert(&#39;formAlert&#39;, &#39;error&#39;, &#39;❌ Invalid token or insufficient permissions&#39;);
+            }
+        } catch (error) {
+            updateStatus(false);
+            showAlert(&#39;formAlert&#39;, &#39;error&#39;, `❌ Connection error: ${error.message}`);
+        }
+    }
+
+    function toggleSearchButton() {
+        const caseName = document.getElementById(&#39;caseName&#39;).value.trim();
+        document.getElementById(&#39;searchBtn&#39;).disabled = !caseName || !isConnected;
+    }
+
+    async function searchCourtListener() {
+        const caseName = document.getElementById(&#39;caseName&#39;).value.trim();
+        if (!caseName) return;
+
+        showAlert(&#39;formAlert&#39;, &#39;warning&#39;, &#39;⚠️ Client-side CourtListener searches disabled for security. Using mock data or set up proxy.&#39;);
+        // Placeholder - in production, call backend proxy
+        // fetch(&#39;/api/courtlistener&#39;, { method: &#39;POST&#39;, body: JSON.stringify({ query: caseName }) })
+
+        // Mock results for demo (replace with real API call)
+        searchResults = [
+            {
+                case_name: `${caseName} (Mock Result 1)`,
+                date_filed: &#39;2025-01-15&#39;,
+                court: &#39;U.S. District Court&#39;,
+                docket_number: &#39;1:25-cv-00123&#39;,
+                citation: &#39;123 F. Supp. 3d 456&#39;,
+                author: &#39;Judge Jane Doe&#39;,
+                case_type: &#39;Civil Rights&#39;,
+                status: &#39;Published&#39;,
+                attorney: &#39;John Smith, Esq.&#39;,
+                summary: &#39;This case involves constitutional rights violations.&#39;,
+                url: &#39;/mock-url&#39;
+            },
+            {
+                case_name: `${caseName} v. State (Mock Result 2)`,
+                date_filed: &#39;2025-02-20&#39;,
+                court: &#39;Supreme Court&#39;,
+                docket_number: &#39;S25-123&#39;,
+                citation: &#39;789 U.S. 101&#39;,
+                author: &#39;Justice John Roe&#39;,
+                case_type: &#39;Criminal&#39;,
+                status: &#39;Unpublished&#39;,
+                attorney: &#39;Jane Roe, Esq.&#39;,
+                summary: &#39;Appeal on procedural errors.&#39;,
+                url: &#39;/mock-url2&#39;
+            }
+        ];
+
+        displaySearchResults(searchResults);
+    }
+
+    function displaySearchResults(results) {
+        const container = document.getElementById(&#39;searchResults&#39;);
+        container.style.display = &#39;block&#39;;
+        container.innerHTML = `
+            &lt;h4&gt;Search Results from CourtListener:&lt;/h4&gt;
+            ${results.map((result, index) =&gt; `
+                &lt;div class=&quot;search-result&quot;&gt;
+                    &lt;h4&gt;${result.case_name}&lt;/h4&gt;
+                    &lt;p&gt;&lt;strong&gt;Date:&lt;/strong&gt; ${result.date_filed} | &lt;strong&gt;Court:&lt;/strong&gt; ${result.court}&lt;/p&gt;
+                    &lt;p&gt;&lt;strong&gt;Citation:&lt;/strong&gt; ${result.citation} | &lt;strong&gt;Author:&lt;/strong&gt; ${result.author}&lt;/p&gt;
+                    &lt;p&gt;&lt;strong&gt;Type:&lt;/strong&gt; ${result.case_type} | &lt;strong&gt;Status:&lt;/strong&gt; ${result.status}&lt;/p&gt;
+                    &lt;p&gt;&lt;strong&gt;Attorney:&lt;/strong&gt; ${result.attorney}&lt;/p&gt;
+                    &lt;p&gt;&lt;strong&gt;Summary:&lt;/strong&gt; ${result.summary}&lt;/p&gt;
+                    &lt;button class=&quot;btn btn-secondary&quot; onclick=&quot;useSearchResult(${index})&quot;&gt;Use This Data&lt;/button&gt;
+                &lt;/div&gt;
+            `).join(&#39;&#39;)}
+        `;
+    }
+
+    function useSearchResult(index) {
+        const result = searchResults[index];
+        document.getElementById(&#39;caseDate&#39;).value = result.date_filed;
+        document.getElementById(&#39;court&#39;).value = result.court;
+        document.getElementById(&#39;judge&#39;).value = result.author;
+        document.getElementById(&#39;caseType&#39;).value = result.case_type;
+        document.getElementById(&#39;status&#39;).value = result.status;
+        document.getElementById(&#39;notes&#39;).value = `Summary: ${result.summary}\nCitation: ${result.citation}\nAttorney: ${result.attorney}\nDocket: ${result.docket_number}`;
+        showAlert(&#39;formAlert&#39;, &#39;success&#39;, &#39;✅ Form populated with CourtListener data!&#39;);
+    }
+
+    async function submitCase() {
+        const token = document.getElementById(&#39;notionToken&#39;).value.trim();
+        if (!token || !isConnected) {
+            showAlert(&#39;formAlert&#39;, &#39;error&#39;, &#39;❌ Please connect to Notion first.&#39;);
+            return;
+        }
+
+        const submitBtn = document.getElementById(&#39;submitBtn&#39;);
+        const spinner = document.createElement(&#39;div&#39;);
+        spinner.className = &#39;spinner&#39;;
+        spinner.style.display = &#39;inline-block&#39;;
+        spinner.style.marginLeft = &#39;10px&#39;;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = &#39;Submitting... &#39;;
+        submitBtn.appendChild(spinner);
+
+        try {
+            const caseName = document.getElementById(&#39;caseName&#39;).value.trim();
+            const caseDate = document.getElementById(&#39;caseDate&#39;).value;
+            const court = document.getElementById(&#39;court&#39;).value.trim();
+            const judge = document.getElementById(&#39;judge&#39;).value.trim();
+            const caseType = document.getElementById(&#39;caseType&#39;).value;
+            const status = document.getElementById(&#39;status&#39;).value;
+            const notes = document.getElementById(&#39;notes&#39;).value.trim();
+
+            if (!caseName) {
+                throw new Error(&#39;Case Name is required.&#39;);
+            }
+
+            // Database ID - replace with your actual database ID
+            const databaseId = &#39;YOUR_DATABASE_ID_HERE&#39;; // Set this in your repo or via env
+
+            const properties = {
+                Name: {
+                    title: [{ text: { content: caseName } }]
+                }
+            };
+
+            if (caseDate) {
+                properties.Date = { date: { start: caseDate } };
+            }
+
+            if (court) {
+                properties.Court = { rich_text: [{ text: { content: court } }] };
+            }
+
+            if (judge) {
+                properties.Judge = { rich_text: [{ text: { content: judge } }] };
+            }
+
+            if (caseType) {
+                properties[&#39;Case Type&#39;] = { select: { name: caseType } };
+            }
+
+            if (status) {
+                properties.Status = { select: { name: status } };
+            }
+
+            if (notes) {
+                properties.Notes = { rich_text: [{ text: { content: notes } }] };
+            }
+
+            const response = await fetch(`https://api.notion.com/v1/pages`, {
+                method: &#39;POST&#39;,
+                headers: {
+                    &#39;Authorization&#39;: `Bearer ${token}`,
+                    &#39;Content-Type&#39;: &#39;application/json&#39;,
+                    &#39;Notion-Version&#39;: &#39;2022-06-28&#39;
+                },
+                body: JSON.stringify({
+                    parent: { database_id: databaseId },
+                    properties
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                showAlert(&#39;formAlert&#39;, &#39;success&#39;, &#39;✅ Case added to Notion successfully!&#39;);
+                
+                // Add to recent entries
+                recentEntries.unshift({
+                    caseName,
+                    court,
+                    caseDate,
+                    timestamp: new Date().toISOString()
+                });
+                if (recentEntries.length &gt; 5) recentEntries = recentEntries.slice(0, 5);
+                localStorage.setItem(&#39;recentEntries&#39;, JSON.stringify(recentEntries));
+                displayRecentEntries();
+
+                // Clear form
+                document.querySelectorAll(&#39;input, select, textarea&#39;).forEach(el =&gt; el.value = &#39;&#39;);
+                document.getElementById(&#39;searchResults&#39;).style.display = &#39;none&#39;;
+            } else {
+                const error = await response.json();
+                showAlert(&#39;formAlert&#39;, &#39;error&#39;, `❌ Failed to add case: ${error.message}`);
+            }
+        } catch (error) {
+            showAlert(&#39;formAlert&#39;, &#39;error&#39;, `❌ Failed to save: ${error.message}`);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = &#39;📝 Submit Case&#39;;
+            spinner.remove();
+        }
+    }
+
+    function updateStatus(connected, text = &#39;&#39;) {
+        const status = document.getElementById(&#39;connectionStatus&#39;);
+        const statusText = document.getElementById(&#39;statusText&#39;);
+        if (connected) {
+            status.className = &#39;status status-connected&#39;;
+            statusText.textContent = text || &#39;Connected&#39;;
+        } else {
+            status.className = &#39;status status-disconnected&#39;;
+            statusText.textContent = text || &#39;Disconnected&#39;;
+        }
+    }
+
+    function showAlert(elementId, type, message) {
+        const alert = document.getElementById(elementId);
+        alert.className = `alert alert-${type} show`;
+        alert.innerHTML = message;
+        
+        if (type === &#39;success&#39;) {
+            setTimeout(() =&gt; alert.classList.remove(&#39;show&#39;), 5000);
+        }
+    }
+
+    function displayRecentEntries() {
+        const container = document.getElementById(&#39;recentEntries&#39;);
+        const list = document.getElementById(&#39;entriesList&#39;);
+
+        if (recentEntries.length === 0) {
+            container.style.display = &#39;none&#39;;
+            return;
+        }
+
+        container.style.display = &#39;block&#39;;
+        list.innerHTML = recentEntries.map(entry =&gt; `
+            &lt;div class=&quot;entry-card&quot;&gt;
+                &lt;h4&gt;${entry.caseName || &#39;Untitled&#39;}&lt;/h4&gt;
+                &lt;div class=&quot;entry-meta&quot;&gt;
+                    ${entry.court ? `Court: ${entry.court} • ` : &#39;&#39;}
+                    ${entry.caseDate ? `Date: ${entry.caseDate}` : &#39;&#39;}
+                    &lt;br&gt;Submitted: ${new Date(entry.timestamp).toLocaleString()}
+                &lt;/div&gt;
+            &lt;/div&gt;
+        `).join(&#39;&#39;);
+    }
+
+    console.log(&#39;🚀 Notion Law Data Collector loaded!&#39;);
+&lt;/script&gt;
+</code></pre>
+</body>
+</html>
