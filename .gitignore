@@ -92,3 +92,6 @@ MANIFEST
 
 # AWS
 *.pem
+
+# Screenshots for documentation
+*.png
