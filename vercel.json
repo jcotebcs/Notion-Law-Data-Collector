@@ -1,26 +1,75 @@
 {
   "version": 2,
+  "functions": {
+    "api/**/*.js": {
+      "runtime": "@vercel/node"
+    }
+  },
   "builds": [
     {
       "src": "api/**/*.js",
-      "use": "@vercel/node"
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ["package.json"]
+      }
     }
   ],
   "routes": [
     {
-      "src": "/api/testConnection",
-      "dest": "/api/testConnection.js"
+      "src": "/",
+      "dest": "/index.html"
     },
     {
-      "src": "/api/createPage",
-      "dest": "/api/createPage.js"
+      "src": "/api/notion",
+      "dest": "/api/notion.js",
+      "methods": ["GET", "POST", "OPTIONS"]
+    },
+    {
+      "src": "/api/testConnection",
+      "dest": "/api/notion.js",
+      "methods": ["GET", "OPTIONS"]
+    },
+    {
+      "src": "/api/createPage", 
+      "dest": "/api/notion.js",
+      "methods": ["POST", "OPTIONS"]
     },
     {
       "src": "/api/queryDatabase",
-      "dest": "/api/queryDatabase.js"
+      "dest": "/api/notion.js", 
+      "methods": ["GET", "POST", "OPTIONS"]
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods", 
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
+        }
+      ]
     }
   ],
   "env": {
-    "NOTION_API_KEY": "@notion_api_key"
-  }
+    "NOTION_API_KEY": "@notion_api_key",
+    "NODE_ENV": "production"
+  },
+  "regions": ["iad1"]
 }

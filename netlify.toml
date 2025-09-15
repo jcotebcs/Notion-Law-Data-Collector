@@ -1,0 +1,57 @@
+# Netlify deployment configuration
+[build]
+  # Build command - no build step needed for static frontend
+  command = "echo 'No build step required'"
+  # Publish directory 
+  publish = "."
+  # Functions directory for serverless functions
+  functions = "api"
+
+[build.environment]
+  NODE_ENV = "production"
+
+# Serverless function settings
+[functions]
+  # External node modules will be included
+  external_node_modules = ["axios"]
+  # Node bundler for compatibility
+  node_bundler = "esbuild"
+
+# API routes configuration
+[[redirects]]
+  from = "/api/notion"
+  to = "/.netlify/functions/notion"
+  status = 200
+
+[[redirects]]
+  from = "/api/testConnection"
+  to = "/.netlify/functions/notion"
+  status = 200
+  
+[[redirects]]
+  from = "/api/createPage"
+  to = "/.netlify/functions/notion"
+  status = 200
+  
+[[redirects]]
+  from = "/api/queryDatabase"
+  to = "/.netlify/functions/notion"
+  status = 200
+
+# Headers for CORS support
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
+
+[[headers]]
+  for = "/.netlify/functions/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
+
+# Environment variables
+# Set NOTION_API_KEY in Netlify dashboard under Site settings > Environment variables
