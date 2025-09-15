@@ -1,0 +1,22 @@
+{
+  "name": "notion-law-data-collector-lambda",
+  "version": "1.0.0",
+  "description": "JavaScript AWS Lambda handlers for Notion API proxy",
+  "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.0.0",
+    "axios": "^1.6.0"
+  },
+  "keywords": [
+    "aws-lambda",
+    "notion",
+    "api-proxy",
+    "serverless",
+    "cors"
+  ],
+  "author": "",
+  "license": "MIT"
+}
